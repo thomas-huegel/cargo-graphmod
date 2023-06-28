@@ -1,21 +1,21 @@
 use std::{env, path::Path};
 
-use cargo_graphmod::graph;
+use cargo_graphmod::{dependencies_graph, components::DependenciesGraph};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     match args.get(1) {
         Some(directory) => {
-            let mut graph = graph::DependenciesGraph::new();
+            let mut graph = DependenciesGraph::new();
             match args.get(2) {
                 Some(crate_name) => {
                     let path = Path::new(directory);
-                    let skip_length = path.iter().count() + 1;
-                    if graph::generate_graph (path, &mut graph, &crate_name, skip_length).is_err() {
+                    let skip_length = path.iter().count();
+                    if dependencies_graph::generate_graph (path, &mut graph, &crate_name, skip_length).is_err() {
                         println!("Error when generating the graph.");
                     }
-                    let output = graph::format_graph (graph);
+                    let output = dependencies_graph::format_graph (graph);
                     println!("{}", output);
                 }
                 None => println!("Crate name?")
