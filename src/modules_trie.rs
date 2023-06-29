@@ -17,6 +17,7 @@ impl Display for ModulesTrie {
         } else {
             write!(f, "subgraph cluster_{} {{\n", self.cluster_id)?;
             write!(f, "label=\"{}\"\n", self.basename)?;
+            write!(f, "\"{}\"[label=\"{}\"]\n", self.path, self.basename.to_string() + "::mod")?;
             for (_name, trie) in self.children.iter() {
                 trie.fmt(f)?;
             }
