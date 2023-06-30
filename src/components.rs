@@ -1,8 +1,9 @@
 use std::{collections::HashMap, fmt::Display};
 
+pub const CRATE: &str = "crate";
 pub const SEPARATOR: &str = "::";
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleComponents(pub Vec<String>);
 
 impl From<Vec<String>> for ModuleComponents {
