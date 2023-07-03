@@ -1,21 +1,20 @@
 use std::{env, path::Path};
 
-use cargo_graphmod::{dependencies_graph, components::DependenciesGraph};
+use cargo_graphmod::{read_files, dependencies_graph, components::CodeBase, output_for_dot};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     match args.get(1) {
         Some(directory) => {
-            let mut graph = DependenciesGraph::new();
             match args.get(2) {
                 Some(crate_name) => {
                     let path = Path::new(directory);
                     let skip_length = path.iter().count();
-                    if dependencies_graph::generate_graph (path, &mut graph, &crate_name, skip_length).is_err() {
-                        println!("Error when generating the graph.");
-                    }
-                    let output = dependencies_graph::format_graph (graph);
+                    let mut code_to_analyze = CodeBase::new();
+                    read_files::read_files(path, &mut code_to_analyze, skip_length).expect("Unable to read code base!");
+                    let trie = dependencies_graph::generate_trie_from_code(&code_to_analyze, crate_name);
+                    let output = output_for_dot::show(&trie);
                     println!("{}", output);
                 }
                 None => println!("Crate name?")

@@ -1,7 +1,6 @@
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 pub const CRATE: &str = "crate";
-pub const SEPARATOR: &str = "::";
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleComponents(pub Vec<String>);
@@ -12,20 +11,16 @@ impl From<Vec<String>> for ModuleComponents {
     }
 }
 
-impl Display for ModuleComponents {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\"{}{}\"", SEPARATOR, self.0.join(SEPARATOR))
+pub struct CodeBase(pub HashMap<ModuleComponents, String>);
+
+impl CodeBase {
+    pub fn new() -> Self {
+        Self(HashMap::new())
     }
 }
 
-pub struct DependenciesGraph {
-    pub map: HashMap<ModuleComponents, Vec<ModuleComponents>>,
-}
-
-impl DependenciesGraph {
-    pub fn new() -> Self {
-        DependenciesGraph { 
-            map: HashMap::new(),
-        }
+impl From<HashMap<ModuleComponents, String>> for CodeBase {
+    fn from(value: HashMap<ModuleComponents, String>) -> Self {
+        Self(value)
     }
 }

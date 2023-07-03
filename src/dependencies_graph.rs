@@ -1,62 +1,66 @@
-use std::{path::Path, 
-    fs::read_to_string, io::Result, collections::HashSet};
+use crate::{components:: {ModuleComponents, CodeBase}, dependencies_parser::parse_dependencies, trie::Trie};
 
-use crate::{components:: {ModuleComponents, DependenciesGraph}, modules_trie, dependencies_parser::parse_dependencies};
+pub type DependenciesGraph<'a> = Trie<'a, String, Vec<ModuleComponents>>;
 
-pub fn generate_graph(path: &Path, graph: &mut DependenciesGraph, crate_name: &str, skip_length: usize) -> Result<()> {
-    if path.is_file() {
-        if let Some(Some("rs")) = path.extension().map(|e| e.to_str()) {
-            let contents = read_to_string(path)?;
-            let components: ModuleComponents = path.with_extension("").iter()
-                .skip(skip_length)
-                .map(|s| s.to_string_lossy().into())
-                .filter(|s| s != "mod")
-                .collect::<Vec<String>>().into();
-            graph.map.insert(
-                components.clone(), 
-                parse_dependencies(&contents, crate_name)
-            );
-        }
-    } else if path.is_dir() {
-        for entry in path.read_dir().expect("read_dir call failed") {
-            if let Ok(entry) = entry {
-                generate_graph(&entry.path(), graph, crate_name, skip_length)?;
-            }
-        }
+pub fn generate_trie_from_code<'a>(code: &'a CodeBase, crate_name: &str) -> DependenciesGraph<'a> {
+    let mut trie = DependenciesGraph::new();
+    for (name, contents) in code.0.iter() {
+        trie.insert(&name.0, parse_dependencies(contents, crate_name));
     }
-    Ok(())
+    trie
 }
 
-fn lookup (dependency: &ModuleComponents, graph: &DependenciesGraph) -> Option<ModuleComponents> {
-    let mut components = dependency.clone();
-    while graph.map.get(&components).is_none() && ! components.0.is_empty() {
-        components.0.pop();
-    }
-    if components.0.is_empty() {
-        None
-    } else {
-        Some (components)
-    }
-}
+#[cfg(test)]
+mod tests {
+    use std::{collections::HashMap};
 
-pub fn format_graph (graph: DependenciesGraph) -> String {
-    //let index: ModulesIndex = graph.set.into_iter().zip((0..).map(Index)).collect::<HashMap<_,_>>().into();
-    let trie = modules_trie::convert(&graph);
-    /* let vertices: String = index.0.iter()
-        .map(|(components, idx)| String::from("u") + &idx.0.to_string() + "[label=\"" + &components.0.join("::") + "\"]")
-        .collect::<Vec<_>>()
-        .join("\n"); */
-    let arcs: String = graph.map.iter()
-        .map(|(k, values)| values.iter()
-            //.filter_map(|v| index.get(v).map(|idx| String::from("u") + &index.get(&k).unwrap().to_string() + " -> " + "u" + &idx.to_string()))
-            .filter_map(|v| lookup(v, &graph).map(|trimmed| format!("{}", k) + " -> " + &format!("{}", trimmed)))
-            //.map(|v| format!("{}", k) + " -> " + &format!("{}", v))
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>()
-            .join("\n"))
-        .filter(|s| s != "")
-        .collect::<Vec<_>>()
-        .join("\n");    
-    String::from("digraph G {\n\n") + &format!("{}", trie) + &arcs + "\n}\n"
+    use crate::{components::{CodeBase, ModuleComponents}, dependencies_graph::{generate_trie_from_code, DependenciesGraph}};
+
+    fn make_code_base(dependencies: &[(&str, &str)]) -> CodeBase {
+        dependencies.iter().map(|(path, deps)| (path.split("::").map(|s| s.to_string()).collect::<Vec<_>>().into(), deps.to_string()))
+            .collect::<HashMap<_,_>>().into()
+    }
+    
+    #[test]
+    fn it_builds_the_trie() {
+        let crate_name = "my_crate";
+        let foobar = ("foo::bar", "use external::dep;\nuse crate::abc;\n use my_crate::def;");
+        let abc = ("abc", "use crate::foo::Panel;");
+        let def = ("def", "use crate::foo::bar::Widget;");
+        let foomod = ("foo::mod", "pub use bar;");
+        let code = make_code_base(&[foobar, abc, def, foomod]);
+        let result = generate_trie_from_code(&code, crate_name);
+        let sfoo = String::from("foo");
+        let sbar = String::from("bar");
+        let smod = String::from("mod");
+        let sabc = String::from("abc");
+        let sdef = String::from("def");
+        let expected = DependenciesGraph { 
+            value: None, 
+            children: HashMap::from([
+                (&sfoo, DependenciesGraph { 
+                    value: None,
+                    children: HashMap::from([
+                        (&sbar, DependenciesGraph {
+                            value: Some(vec![ModuleComponents(vec![String::from("abc")]), ModuleComponents(vec![String::from("def")])]),
+                            children: HashMap::new()
+                        }),
+                        (&smod, DependenciesGraph { 
+                            value: Some(vec![]),
+                            children: HashMap::new()
+                        })
+                    ])
+                }),
+                (&sabc, DependenciesGraph {
+                    value: Some(vec![ModuleComponents(vec![String::from("foo"), String::from("Panel")])]),
+                    children: HashMap::new()
+                }),
+                (&sdef, DependenciesGraph {
+                    value: Some(vec![ModuleComponents(vec![String::from("foo"), String::from("bar"), String::from("Widget")])]),
+                    children: HashMap::new()
+                })
+            ])
+        };
+        assert_eq!(result, expected);
+    }
 }

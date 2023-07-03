@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 
-use crate::components::{ModuleComponents, SEPARATOR, CRATE};
+use crate::components::{ModuleComponents, CRATE};
+
+const INPUT_SEPARATOR: &str = "::";
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -37,7 +39,7 @@ fn develop_all_dependencies (dependency: &str) -> HashSet<String> {
 
 fn parse_use(text: &str) -> Vec<String> {
     lazy_static! {
-        static ref USE: Regex = Regex::new(r"(?sm)^(?:pub )?use (.*?);").unwrap();
+        static ref USE: Regex = Regex::new(r"(?sm)^(?:\s)*(?:pub )?use (.*?);").unwrap();
     }
     USE.captures_iter(text).map(|cap| cap[1].to_string()).collect()
 }
@@ -51,10 +53,10 @@ fn belongs_to_crate (components: &[String], crate_name: &str) -> Option<ModuleCo
     None 
 }
 
-pub fn parse_dependencies (text: &str, crate_name: &str) -> Vec<ModuleComponents> {
-    parse_use(text).iter()
+pub fn parse_dependencies (contents: &str, crate_name: &str) -> Vec<ModuleComponents> {
+    parse_use(contents).iter()
         .flat_map(|s| develop_all_dependencies(&s))
-        .map(|s| s.split(SEPARATOR).map(|s| s.to_string()).collect::<Vec<String>>())
+        .map(|s| s.split(INPUT_SEPARATOR).map(|s| s.to_string()).collect::<Vec<String>>())
         .filter_map(|c| belongs_to_crate(&c, crate_name))
         .collect()
 }
@@ -95,9 +97,9 @@ mod tests {
 
     #[test]
     fn it_parses_multiple_use() {
-        let text = "use foo::bar;\npub use bar::foo;";
+        let text = "use foo::bar;\npub use bar::foo;\n\tuse foobar;";
         let result = parse_use(text);
-        assert_eq!(result, vec![String::from("foo::bar"), String::from("bar::foo")]);
+        assert_eq!(result, vec![String::from("foo::bar"), String::from("bar::foo"), String::from("foobar")]);
     }
 
     #[test]
@@ -125,9 +127,9 @@ mod tests {
     fn it_parses_dependencies() {
         let text = r#"
 use crate::foo::bar;
-use my_crate::foo::{bar1,
-                  bar2,
-                  bar3::{abc, xyz}};
+    use my_crate::foo::{bar1,
+                      bar2,
+                      bar3::{abc, xyz}};
 pub use crate::foo1;
 use external::crate::aaa;
 
