@@ -14,9 +14,14 @@ fn show_vertices (trie: &DependenciesGraph, path: &str, basename: &str) -> Strin
     if trie.children.is_empty() {
         format!("\"{}\"[label=\"{}\"]\n", path, basename)
     } else {
+        let module_node = if path.is_empty() {
+            String::new()
+        } else {
+            format!("\"{}\"[label=\"{}\"]\n", path, basename.to_string() + OUTPUT_SEPARATOR + MODULE)
+        };
         format!("subgraph cluster_{} {{\n", cluster_id(path))
         + &format!("label=\"{}\"\n", basename)
-        + &format!("\"{}\"[label=\"{}\"]\n", path, basename.to_string() + OUTPUT_SEPARATOR + MODULE)
+        + &module_node
         + &trie.children.iter()
             .map(|(bname, trie)| show_vertices(trie, &(path.to_string() + OUTPUT_SEPARATOR + bname), bname))
             .collect::<Vec<_>>()
@@ -102,7 +107,6 @@ mod tests {
 r#"digraph dependencies {
 subgraph cluster_ {
 label=""
-""[label="::mod"]
 "::abc"[label="abc"]
 "::def"[label="def"]
 subgraph cluster____foo {
