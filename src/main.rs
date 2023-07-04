@@ -1,6 +1,6 @@
 use std::{env, path::Path};
 
-use cargo_graphmod::{read_files, dependencies_graph, components::CodeBase, output_for_dot};
+use cargo_graphmod::{read_files, output_for_dot, components::DependenciesGraph};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -11,9 +11,8 @@ fn main() {
                 Some(crate_name) => {
                     let path = Path::new(directory);
                     let skip_length = path.iter().count();
-                    let mut code_to_analyze = CodeBase::new();
-                    read_files::read_files(path, &mut code_to_analyze, skip_length).expect("Unable to read code base!");
-                    let trie = dependencies_graph::generate_trie_from_code(&code_to_analyze, crate_name);
+                    let mut trie = DependenciesGraph::new();
+                    read_files::read_files(path, &mut trie, skip_length, &crate_name).expect("Unable to read code base!");
                     let output = output_for_dot::show(&trie);
                     println!("{}", output);
                 }

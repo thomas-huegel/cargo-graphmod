@@ -1,6 +1,6 @@
-use std::collections::HashSet;
+use std::collections::BTreeSet as Set;
 
-use crate::{dependencies_graph::DependenciesGraph};
+use crate::components::{DependenciesGraph, ModuleComponents};
 
 const MODULE: &str = "mod";
 const OUTPUT_SEPARATOR: &str = "::";
@@ -25,24 +25,31 @@ fn show_vertices (trie: &DependenciesGraph, path: &str, basename: &str) -> Strin
     }
 }
 
-fn show_dependencies_from_vertex(trie: &DependenciesGraph, path: &str) -> Option<String> {
-    trie.value.as_ref().map (|deps: &Vec<crate::components::ModuleComponents>| deps.iter()
-        .filter_map(|v| trie.get_longest_prefix(&v.0)
-            .map(|trimmed| String::from(path) + " -> " + &trimmed.join(OUTPUT_SEPARATOR))
-        )
-        .collect::<HashSet<_>>()
+fn make_arrow(trie: &DependenciesGraph, path: &str, v: &ModuleComponents) -> Option<String> {
+    let longest_prefix = trie.get_longest_prefix(&v.0);
+    if longest_prefix.is_empty() {
+        None
+    } else {
+        Some (String::from("\"") + path + "\" -> \"" + OUTPUT_SEPARATOR + &longest_prefix.join(OUTPUT_SEPARATOR) + "\"")
+    }
+}
+
+fn show_dependencies_from_vertex(current_trie: &DependenciesGraph, whole_trie: &DependenciesGraph, path: &str) -> Option<String> {
+    current_trie.value.as_ref().map (|deps| deps.iter()
+        .filter_map(|v| make_arrow(whole_trie, path, v))
+        .collect::<Set<_>>()
         .into_iter()
         .collect::<Vec<_>>()
         .join("\n")
     )
 }
 
-fn show_arcs (trie: &DependenciesGraph, path: &str) -> String {
-    if trie.children.is_empty() {
-        return show_dependencies_from_vertex(trie, path).unwrap_or(String::new())
+fn show_arcs (current_trie: &DependenciesGraph, whole_trie: &DependenciesGraph, path: &str) -> String {
+    if current_trie.children.is_empty() {
+        return show_dependencies_from_vertex(current_trie, whole_trie, path).unwrap_or(String::new())
     }
-    trie.children.iter()
-    .map(|(name, child)| show_arcs(child, &(String::from(path) + OUTPUT_SEPARATOR + name)))
+    current_trie.children.iter()
+    .map(|(name, child)| show_arcs(child, whole_trie, &(String::from(path) + OUTPUT_SEPARATOR + name)))
     .filter(|s| s != "")
     .collect::<Vec<_>>()
     .join("\n")
@@ -51,47 +58,42 @@ fn show_arcs (trie: &DependenciesGraph, path: &str) -> String {
 pub fn show(trie: &DependenciesGraph) -> String {
     String::from("digraph dependencies {\n")
         + &show_vertices(trie, "", "")
-        + &show_arcs(trie, "")
-        + "}\n"
+        + &show_arcs(trie, trie, "")
+        + "\n}\n"
 }
 
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap};
+    use std::{collections::BTreeMap as Map};
 
-    use crate::{dependencies_graph::DependenciesGraph, components::ModuleComponents, output_for_dot::show};
+    use crate::{components::DependenciesGraph, components::ModuleComponents, output_for_dot::show};
     
     #[test]
     fn it_outputs_to_dot() {
-        let sfoo = String::from("foo");
-        let sbar = String::from("bar");
-        let smod = String::from("mod");
-        let sabc = String::from("abc");
-        let sdef = String::from("def");
         let trie = DependenciesGraph { 
             value: None, 
-            children: HashMap::from([
-                (&sfoo, DependenciesGraph { 
+            children: Map::from([
+                (String::from("foo"), DependenciesGraph { 
                     value: None,
-                    children: HashMap::from([
-                        (&sbar, DependenciesGraph {
+                    children: Map::from([
+                        (String::from("bar"), DependenciesGraph {
                             value: Some(vec![ModuleComponents(vec![String::from("abc")]), ModuleComponents(vec![String::from("def")])]),
-                            children: HashMap::new()
+                            children: Map::new()
                         }),
-                        (&smod, DependenciesGraph { 
+                        (String::from("mod"), DependenciesGraph { 
                             value: Some(vec![]),
-                            children: HashMap::new()
+                            children: Map::new()
                         })
                     ])
                 }),
-                (&sabc, DependenciesGraph {
+                (String::from("abc"), DependenciesGraph {
                     value: Some(vec![ModuleComponents(vec![String::from("foo"), String::from("Panel")])]),
-                    children: HashMap::new()
+                    children: Map::new()
                 }),
-                (&sdef, DependenciesGraph {
+                (String::from("def"), DependenciesGraph {
                     value: Some(vec![ModuleComponents(vec![String::from("foo"), String::from("bar"), String::from("Widget")])]),
-                    children: HashMap::new()
+                    children: Map::new()
                 })
             ])
         };
@@ -101,15 +103,19 @@ r#"digraph dependencies {
 subgraph cluster_ {
 label=""
 ""[label="::mod"]
+"::abc"[label="abc"]
+"::def"[label="def"]
 subgraph cluster____foo {
 label="foo"
 "::foo"[label="foo::mod"]
 "::foo::bar"[label="bar"]
 "::foo::mod"[label="mod"]
 }
-"::def"[label="def"]
-"::abc"[label="abc"]
 }
+"::abc" -> "::foo"
+"::def" -> "::foo::bar"
+"::foo::bar" -> "::abc"
+"::foo::bar" -> "::def"
 }
 "#
         );

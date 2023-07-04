@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::trie::Trie;
 
 pub const CRATE: &str = "crate";
 
@@ -11,16 +11,4 @@ impl From<Vec<String>> for ModuleComponents {
     }
 }
 
-pub struct CodeBase(pub HashMap<ModuleComponents, String>);
-
-impl CodeBase {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-}
-
-impl From<HashMap<ModuleComponents, String>> for CodeBase {
-    fn from(value: HashMap<ModuleComponents, String>) -> Self {
-        Self(value)
-    }
-}
+pub type DependenciesGraph = Trie<String, Vec<ModuleComponents>>;
