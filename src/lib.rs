@@ -1,3 +1,4 @@
+mod colors;
 pub mod components;
 mod dependencies_parser;
 pub mod output_for_dot;

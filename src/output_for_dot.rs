@@ -1,6 +1,6 @@
 use std::collections::BTreeSet as Set;
 
-use crate::components::{DependenciesGraph, ModuleComponents};
+use crate::{components::{DependenciesGraph, ModuleComponents}, colors};
 
 const MODULE: &str = "mod";
 const OUTPUT_SEPARATOR: &str = "::";
@@ -10,23 +10,32 @@ fn cluster_id(path: &str) -> String {
     path.split(OUTPUT_SEPARATOR).collect::<Vec<_>>().join(CLUSTER_SEPARATOR)
 }
 
-fn show_vertices (trie: &DependenciesGraph, path: &str, basename: &str) -> String {
+fn show_vertices (trie: &DependenciesGraph, dirname: &str, basename: &str, level: usize) -> String {
+    let path = if basename.is_empty() {
+        String::new()
+    } else {
+        String::from(dirname) + OUTPUT_SEPARATOR + basename
+    };
+    let indentation = "  ".repeat(level);
     if trie.children.is_empty() {
-        format!("\"{}\"[label=\"{}\"]\n", path, basename)
+        format!("{}\"{}\"[label=\"{}\",style=\"filled\",fillcolor=\"{}\"]\n", indentation, path, basename, colors::make_random_color(dirname))
     } else {
         let module_node = if path.is_empty() {
             String::new()
         } else {
-            format!("\"{}\"[label=\"{}\"]\n", path, basename.to_string() + OUTPUT_SEPARATOR + MODULE)
+            format!("{}\"{}\"[label=\"{}\",style=\"filled\",fillcolor=\"{}\"]\n", indentation, path, basename.to_string() + OUTPUT_SEPARATOR + MODULE, colors::make_random_color(&path))
         };
-        format!("subgraph cluster_{} {{\n", cluster_id(path))
-        + &format!("label=\"{}\"\n", basename)
+        format!("{}subgraph cluster_{} {{\n", indentation, cluster_id(&path))
+        + &format!("{}label=\"{}\"\n", indentation, basename)
+        + &format!("{}color=\"{}\"\n", indentation, colors::make_gray(level))
+        + &format!("{}style=\"filled\"\n", indentation)
         + &module_node
         + &trie.children.iter()
-            .map(|(bname, trie)| show_vertices(trie, &(path.to_string() + OUTPUT_SEPARATOR + bname), bname))
+            .map(|(bname, trie)|
+                show_vertices(trie, &path, bname, level + 1))
             .collect::<Vec<_>>()
             .join("")
-        + "}\n"
+        + &format!("{}}}\n", indentation)
     }
 }
 
@@ -62,7 +71,7 @@ fn show_arcs (current_trie: &DependenciesGraph, whole_trie: &DependenciesGraph, 
 
 pub fn show(trie: &DependenciesGraph) -> String {
     String::from("digraph dependencies {\n")
-        + &show_vertices(trie, "", "")
+        + &show_vertices(trie, "", "", 0)
         + &show_arcs(trie, trie, "")
         + "\n}\n"
 }
@@ -104,24 +113,28 @@ mod tests {
         };
         let result = show(&trie);
         let expected = String::from(
-r#"digraph dependencies {
+r###"digraph dependencies {
 subgraph cluster_ {
 label=""
-"::abc"[label="abc"]
-"::def"[label="def"]
-subgraph cluster____foo {
-label="foo"
-"::foo"[label="foo::mod"]
-"::foo::bar"[label="bar"]
-"::foo::mod"[label="mod"]
-}
+color="#ffffff"
+style="filled"
+  "::abc"[label="abc",style="filled",fillcolor="#ffffff"]
+  "::def"[label="def",style="filled",fillcolor="#ffffff"]
+  subgraph cluster____foo {
+  label="foo"
+  color="#eeeeee"
+  style="filled"
+  "::foo"[label="foo::mod",style="filled",fillcolor="#86c2dc"]
+    "::foo::bar"[label="bar",style="filled",fillcolor="#86c2dc"]
+    "::foo::mod"[label="mod",style="filled",fillcolor="#86c2dc"]
+  }
 }
 "::abc" -> "::foo"
 "::def" -> "::foo::bar"
 "::foo::bar" -> "::abc"
 "::foo::bar" -> "::def"
 }
-"#
+"###
         );
         assert_eq!(result, expected);
     }
