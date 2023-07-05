@@ -1,14 +1,15 @@
-use std::collections::BTreeSet as Set;
+use std::collections::{BTreeSet as Set, VecDeque};
 
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::dependency_components::DependencyComponents;
 
-const MOD: &str = "mod";
-const SELF: &str = "self";
 const CRATE: &str = "crate";
 const INPUT_SEPARATOR: &str = "::";
+const MOD: &str = "mod";
+const SELF: &str = "self";
+const SUPER: &str = "super";
 
 fn develop_innermost_dependencies (text: &str) -> Set<String> {
     lazy_static! {
@@ -49,21 +50,34 @@ fn parse_use(text: &str) -> Vec<String> {
 
 fn expand_dependency_components (dependency_components: &[String], crate_name: &str, mut source_components: Vec<String>) -> DependencyComponents {
     let fst = dependency_components.get(0).expect("A dependency should not be empty!");
-    if fst == crate_name || fst == CRATE {
+    if fst == crate_name || fst == CRATE { // absolute dependency
         return DependencyComponents::new(dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>(), true);
-    } else {
+    } else { // relative dependency
         if let Some(last) = source_components.last() {
             if last == MOD {
                 source_components.pop();
             }
         }
-        let (nb_to_skip, is_certainly_internal) = if fst == SELF {
-            (1, true)
+        if fst == SUPER {
+            let mut deps: VecDeque<_> = dependency_components.to_owned().into();
+            while let Some(fst) = deps.front() {
+                if fst == SUPER {
+                    deps.pop_front();
+                    source_components.pop();
+                } else {
+                    break;
+                }
+            }
+            source_components.append(&mut deps.iter().map(|s| s.into()).collect::<Vec<_>>());
+            return DependencyComponents::new(source_components, true);            
         } else {
-            (0, false)           
-        };
-        source_components.append(&mut dependency_components.iter().skip(nb_to_skip).map(|s| s.into()).collect::<Vec<_>>());
-        return DependencyComponents::new(source_components, is_certainly_internal);
+            let (nb_to_skip, is_certainly_internal) = match fst.as_str() {
+                SELF => (1, true),
+                _ => (0, false)           
+            };
+            source_components.append(&mut dependency_components.iter().skip(nb_to_skip).map(|s| s.into()).collect::<Vec<_>>());
+            return DependencyComponents::new(source_components, is_certainly_internal);
+        }
     }
 }
 
@@ -128,6 +142,13 @@ mod tests {
         let dependency = vec![String::from("crate"), String::from("foo"), String::from("bar")];
         let result = expand_dependency_components(&dependency, "my_crate", vec![]);
         assert_eq!(result, DependencyComponents::new(vec![String::from("foo"), String::from("bar")], true));
+    }
+
+    #[test]
+    fn it_belongs_to_a_supermodule() {
+        let dependency = vec![String::from("super"), String::from("super"), String::from("foo"), String::from("bar")];
+        let result = expand_dependency_components(&dependency, "my_crate", vec![String::from("aaa"), String::from("bbb"), String::from("ccc"), String::from("mod")]);
+        assert_eq!(result, DependencyComponents::new(vec![String::from("aaa"), String::from("foo"), String::from("bar")], true));
     }
 
     #[test]
