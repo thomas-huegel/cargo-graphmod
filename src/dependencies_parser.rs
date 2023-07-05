@@ -1,7 +1,10 @@
 use std::collections::HashSet;
 
-use crate::components::{ModuleComponents, CRATE};
+use crate::components::ModuleComponents;
 
+const MOD: &str = "mod";
+const SELF: &str = "self";
+const CRATE: &str = "crate";
 const INPUT_SEPARATOR: &str = "::";
 
 use lazy_static::lazy_static;
@@ -44,20 +47,28 @@ fn parse_use(text: &str) -> Vec<String> {
     USE.captures_iter(text).map(|cap| cap[1].to_string()).collect()
 }
 
-fn belongs_to_crate (components: &[String], crate_name: &str) -> Option<ModuleComponents> {
+fn belongs_to_crate (components: &[String], crate_name: &str, mut source_components: ModuleComponents) -> Option<ModuleComponents> {
     if let Some(fst) = components.get(0) {
         if fst == crate_name || fst == CRATE {
-            return Some(components.iter().skip(1).map(|s| s.into()).collect::<Vec<String>>().into());
+            return Some(components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>().into());
+        } else if fst == SELF {
+            if let Some(last) = source_components.0.last() {
+                if last == MOD {
+                    source_components.0.pop();
+                }
+            }
+            source_components.0.append(&mut components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>());
+            return Some(source_components);
         }
     }
     None 
 }
 
-pub fn parse_dependencies (contents: &str, crate_name: &str) -> Vec<ModuleComponents> {
+pub fn parse_dependencies (contents: &str, crate_name: &str, source_components: ModuleComponents) -> Vec<ModuleComponents> {
     parse_use(contents).iter()
         .flat_map(|s| develop_all_dependencies(&s))
         .map(|s| s.split(INPUT_SEPARATOR).map(|s| s.to_string()).collect::<Vec<String>>())
-        .filter_map(|c| belongs_to_crate(&c, crate_name))
+        .filter_map(|c| belongs_to_crate(&c, crate_name, source_components.clone()))
         .collect()
 }
 
@@ -105,21 +116,28 @@ mod tests {
     #[test]
     fn it_belongs_to_my_crate() {
         let dependency = vec![String::from("my_crate"), String::from("foo"), String::from("bar")];
-        let result = belongs_to_crate(&dependency, "my_crate");
+        let result = belongs_to_crate(&dependency, "my_crate", ModuleComponents(vec![]));
         assert_eq!(result, Some(ModuleComponents(vec![String::from("foo"), String::from("bar")])));
     }
 
     #[test]
     fn it_belongs_to_crate() {
         let dependency = vec![String::from("crate"), String::from("foo"), String::from("bar")];
-        let result = belongs_to_crate(&dependency, "my_crate");
+        let result = belongs_to_crate(&dependency, "my_crate", ModuleComponents(vec![]));
         assert_eq!(result, Some(ModuleComponents(vec![String::from("foo"), String::from("bar")])));
+    }
+
+    #[test]
+    fn it_belongs_to_a_submodule() {
+        let dependency = vec![String::from("self"), String::from("foo"), String::from("bar")];
+        let result = belongs_to_crate(&dependency, "my_crate", ModuleComponents(vec![String::from("path"), String::from("mod")]));
+        assert_eq!(result, Some(ModuleComponents(vec![String::from("path"), String::from("foo"), String::from("bar")])));
     }
 
     #[test]
     fn it_does_not_belong_to_my_crate() {
         let dependency = vec![String::from("scratch"), String::from("foo"), String::from("bar")];
-        let result = belongs_to_crate(&dependency, "my_crate");
+        let result = belongs_to_crate(&dependency, "my_crate", ModuleComponents(vec![]));
         assert_eq!(result, None);
     }
 
@@ -131,12 +149,13 @@ use crate::foo::bar;
                       bar2,
                       bar3::{abc, xyz}};
 pub use crate::foo1;
+use self::foobaz;
 use external::crate::aaa;
 
 fn main() {
 }
         "#;
-        let mut result = parse_dependencies(text, "my_crate");
+        let mut result = parse_dependencies(text, "my_crate", ModuleComponents(vec![String::from("path")]));
         result.sort();
         assert_eq!(result, vec![
             ModuleComponents(vec![String::from("foo"), String::from("bar")]),
@@ -145,6 +164,8 @@ fn main() {
             ModuleComponents(vec![String::from("foo"), String::from("bar3"), String::from("abc")]),
             ModuleComponents(vec![String::from("foo"), String::from("bar3"), String::from("xyz")]),
             ModuleComponents(vec![String::from("foo1")]),
+            ModuleComponents(vec![String::from("path"), String::from("foobaz")]),
+
         ]);
     }
 }

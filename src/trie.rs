@@ -34,7 +34,7 @@ impl<K: Eq + Ord + Clone, V: Clone> Trie<K, V> {
         }
     }
 
-    pub fn get_longest_prefix<'a> (&self, k: &'a[K]) -> &'a[K] {
+    pub fn get_longest_prefix<'a> (&self, k: &'a[K]) -> (&'a[K], Option<V>) {
         let n = k.len();
         let mut bound = 0;
         let mut trie = self;
@@ -45,7 +45,7 @@ impl<K: Eq + Ord + Clone, V: Clone> Trie<K, V> {
                 break;
             }
         }
-        &k[0..bound]
+        (&k[0..bound], trie.value.clone())
     }
 }
 
@@ -107,8 +107,8 @@ mod tests {
         let a1 = [1,3,4];
         let a2 = [1,4];
         let a3 = [4];
-        assert_eq!(trie.get_longest_prefix(&a1), &a1[0..2]);
-        assert_eq!(trie.get_longest_prefix(&a2), &a2[0..1]);
-        assert_eq!(trie.get_longest_prefix(&a3), &a3[0..0]);
+        assert_eq!(trie.get_longest_prefix(&a1), (&a1[0..2], Some(30)));
+        assert_eq!(trie.get_longest_prefix(&a2), (&a2[0..1], None));
+        assert_eq!(trie.get_longest_prefix(&a3), (&a3[0..0], None));
     }
 }

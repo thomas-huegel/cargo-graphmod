@@ -1,6 +1,6 @@
-use std::{env, path::Path};
+use std::env;
 
-use cargo_graphmod::{read_files, output_for_dot, components::DependenciesGraph};
+use cargo_graphmod::app_builder::run_app;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -9,11 +9,7 @@ fn main() {
         Some(directory) => {
             match args.get(2) {
                 Some(crate_name) => {
-                    let path = Path::new(directory);
-                    let skip_length = path.iter().count();
-                    let mut trie = DependenciesGraph::new();
-                    read_files::read_files(path, &mut trie, skip_length, &crate_name).expect("Unable to read code base!");
-                    let output = output_for_dot::show(&trie);
+                    let output = run_app(directory, crate_name);
                     println!("{}", output);
                 }
                 None => println!("Crate name?")

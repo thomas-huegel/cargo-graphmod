@@ -1,6 +1,8 @@
+pub mod app_builder;
 mod colors;
-pub mod components;
+mod components;
+mod dependencies_graph;
 mod dependencies_parser;
-pub mod output_for_dot;
-pub mod read_files;
+mod dot_formatter;
+mod files_reader;
 mod trie;
