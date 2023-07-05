@@ -1,0 +1,38 @@
+digraph dependencies {
+subgraph cluster_ {
+label=""
+color="#ffffff"
+style="filled"
+  "::app_builder"[label="app_builder",style="filled",fillcolor="#ffffff"]
+  "::colors"[label="colors",style="filled",fillcolor="#ffffff"]
+  "::dependencies_graph"[label="dependencies_graph",style="filled",fillcolor="#ffffff"]
+  "::dependencies_parser"[label="dependencies_parser",style="filled",fillcolor="#ffffff"]
+  "::dependency_components"[label="dependency_components",style="filled",fillcolor="#ffffff"]
+  "::dot_formatter"[label="dot_formatter",style="filled",fillcolor="#ffffff"]
+  "::files_reader"[label="files_reader",style="filled",fillcolor="#ffffff"]
+  "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
+  "::main"[label="main",style="filled",fillcolor="#ffffff"]
+  "::trie"[label="trie",style="filled",fillcolor="#ffffff"]
+}
+"::app_builder" -> "::app_builder"
+"::app_builder" -> "::dependencies_graph"
+"::app_builder" -> "::dot_formatter"
+"::app_builder" -> "::files_reader"
+"::colors" -> "::colors"
+"::dependencies_graph" -> "::dependency_components"
+"::dependencies_graph" -> "::trie"
+"::dependencies_parser" -> "::dependencies_parser"
+"::dependencies_parser" -> "::dependency_components"
+"::dependencies_parser" -> "::lib"
+"::dot_formatter" -> "::colors"
+"::dot_formatter" -> "::dependencies_graph"
+"::dot_formatter" -> "::dependency_components"
+"::dot_formatter" -> "::dot_formatter"
+"::files_reader" -> "::dependencies_graph"
+"::files_reader" -> "::dependencies_parser"
+"::files_reader" -> "::files_reader"
+"::main" -> "::app_builder"
+"::main" -> "::main"
+"::trie" -> "::trie"
+}
+

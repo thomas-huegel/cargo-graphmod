@@ -30,13 +30,11 @@ fn develop_innermost_dependencies (text: &str) -> Set<String> {
 }
 
 fn develop_all_dependencies (dependency: &str) -> Set<String> {
-    let mut old_length = 0;
-    let mut new_length = 1;
+    let mut current_str = dependency.to_string();
     let mut current_deps = Set::from([dependency.to_string()]);
-    while old_length != new_length {
-        old_length = current_deps.len();
+    while current_str.contains('{') {
         current_deps = current_deps.iter().flat_map(|s| develop_innermost_dependencies(s.as_str())).collect();
-        new_length = current_deps.len();
+        current_str = current_deps.iter().fold(String::new(), |acc, elem| acc + elem);
     }
     current_deps
 }
@@ -93,13 +91,22 @@ pub fn parse_dependencies (contents: &str, crate_name: &str, source_components: 
 mod tests {
     use std::collections::BTreeSet as Set;
 
-    use crate::{dependencies_parser::{develop_innermost_dependencies, develop_all_dependencies, parse_use, expand_dependency_components, parse_dependencies}, dependency_components::DependencyComponents};
+    use crate::{dependencies_parser::{develop_innermost_dependencies, develop_all_dependencies, parse_use, expand_dependency_components, parse_dependencies},
+        dependency_components::DependencyComponents};
     
     #[test]
     fn it_develops_innermost() {
         let text = "foo::{bar1, bar2, bar3::{far, boo}}";
         let result = develop_innermost_dependencies(text);
         assert_eq!(result, Set::from([String::from("foo::{bar1,bar2,bar3::far}"), String::from("foo::{bar1,bar2,bar3::boo}")]));
+    }
+
+
+    #[test]
+    fn it_develops_innermost_2() {
+        let text = "crate::{foo::{bar}, baz, abc::def}";
+        let result = develop_innermost_dependencies(text);
+        assert_eq!(result, Set::from([String::from("crate::{foo::bar,baz,abc::def}")]));
     }
 
     #[test]
@@ -117,10 +124,17 @@ mod tests {
     }
 
     #[test]
-    fn it_develops_fully() {
+    fn it_develops_fully_1() {
         let text = "foo::{bar1, bar2, bar3::{far, boo}}";
         let result = develop_all_dependencies(text);
         assert_eq!(result, Set::from([String::from("foo::bar1"), String::from("foo::bar2"), String::from("foo::bar3::far"), String::from("foo::bar3::boo")]));
+    }
+
+    #[test]
+    fn it_develops_fully_2() {
+        let text = "crate::{foo::{bar}, baz, abc::def}";
+        let result = develop_all_dependencies(text);
+        assert_eq!(result, Set::from([String::from("crate::abc::def"), String::from("crate::baz"), String::from("crate::foo::bar")]));
     }
 
     #[test]
