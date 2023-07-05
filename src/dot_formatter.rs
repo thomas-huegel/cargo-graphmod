@@ -1,6 +1,6 @@
 use std::collections::BTreeSet as Set;
 
-use crate::{components::ModuleComponents, colors, dependencies_graph::DependenciesGraph};
+use crate::{dependency_components::{DependencyComponents}, colors, dependencies_graph::DependenciesGraph};
 
 const LIB: &str = "lib";
 const MOD: &str = "mod";
@@ -34,8 +34,11 @@ fn show_vertices (trie: &DependenciesGraph, dirname: &str, basename: &str, level
     }
 }
 
-fn make_arrow(trie: &DependenciesGraph, path: &str, v: &ModuleComponents) -> String {
-    let (longest_prefix, value) = trie.get_longest_prefix(&v.0);
+fn make_arrow(trie: &DependenciesGraph, path: &str, v: &DependencyComponents) -> Option<String> {
+    let (longest_prefix, value) = trie.get_longest_prefix(&v.components());
+    if longest_prefix.is_empty() && ! v.is_certainly_internal() {
+        return None;
+    }
     let target = if longest_prefix.is_empty() {
         OUTPUT_SEPARATOR.to_owned() + LIB
     } else {
@@ -45,13 +48,13 @@ fn make_arrow(trie: &DependenciesGraph, path: &str, v: &ModuleComponents) -> Str
         };
         OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix
     };
-    String::from("\"") + path + "\" -> \"" + &target + "\""
+    Some(String::from("\"") + path + "\" -> \"" + &target + "\"")
 
 }
 
 fn show_dependencies_from_vertex(current_trie: &DependenciesGraph, whole_trie: &DependenciesGraph, path: &str) -> Option<String> {
     current_trie.value.as_ref().map (|deps| deps.iter()
-        .map(|v| make_arrow(whole_trie, path, v))
+        .filter_map(|v| make_arrow(whole_trie, path, v))
         .collect::<Set<_>>()
         .into_iter()
         .collect::<Vec<_>>()
@@ -81,7 +84,7 @@ pub fn show(trie: &DependenciesGraph) -> String {
 mod tests {
     use std::{collections::BTreeMap as Map};
 
-    use crate::{components::ModuleComponents, dot_formatter::show, dependencies_graph::DependenciesGraph};
+    use crate::{dot_formatter::show, dependencies_graph::DependenciesGraph, dependency_components::DependencyComponents};
     
     #[test]
     fn it_outputs_to_dot() {
@@ -96,7 +99,7 @@ mod tests {
                     value: None,
                     children: Map::from([
                         (String::from("bar"), DependenciesGraph {
-                            value: Some(vec![ModuleComponents(vec![String::from("abc")]), ModuleComponents(vec![String::from("def")])]),
+                            value: Some(vec![DependencyComponents::new(vec![String::from("abc")], true), DependencyComponents::new(vec![String::from("def")], true)]),
                             children: Map::new()
                         }),
                         (String::from("mod"), DependenciesGraph { 
@@ -106,15 +109,17 @@ mod tests {
                     ])
                 }),
                 (String::from("abc"), DependenciesGraph {
-                    value: Some(vec![ModuleComponents(vec![String::from("foo"), String::from("Panel")])]),
+                    value: Some(vec![
+                        DependencyComponents::new(vec![String::from("foo"), String::from("Panel")], true),
+                        DependencyComponents::new(vec![String::from("Widget")], true),
+                    ]),
                     children: Map::new()
                 }),
                 (String::from("def"), DependenciesGraph {
-                    value: Some(vec![ModuleComponents(vec![String::from("foo"), String::from("bar"), String::from("Widget")])]),
-                    children: Map::new()
-                }),
-                (String::from("ghi"), DependenciesGraph {
-                    value: Some(vec![ModuleComponents(vec![String::from("Widget")])]),
+                    value: Some(vec![
+                        DependencyComponents::new(vec![String::from("foo"), String::from("bar"), String::from("Widget")], true),
+                        DependencyComponents::new(vec![String::from("Panel")], false),
+                    ]),
                     children: Map::new()
                 }),
             ])
@@ -135,14 +140,13 @@ style="filled"
     "::foo::bar"[label="bar",style="filled",fillcolor="#86c2dc"]
     "::foo::mod"[label="mod",style="filled",fillcolor="#86c2dc"]
   }
-  "::ghi"[label="ghi",style="filled",fillcolor="#ffffff"]
   "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
 }
 "::abc" -> "::foo::mod"
+"::abc" -> "::lib"
 "::def" -> "::foo::bar"
 "::foo::bar" -> "::abc"
 "::foo::bar" -> "::def"
-"::ghi" -> "::lib"
 }
 "###
         );

@@ -1,6 +1,6 @@
 use std::{path::Path, fs::read_to_string, io::Result, collections::VecDeque};
 
-use crate::{dependencies_parser, dependencies_graph::DependenciesGraph, components::ModuleComponents};
+use crate::{dependencies_parser, dependencies_graph::DependenciesGraph};
 
 const EXTENSION: &str = "rs";
 
@@ -12,7 +12,8 @@ pub fn read_files<'a>(path: &Path, trie: &mut DependenciesGraph, skip_length: us
                 .skip(skip_length)
                 .map(|s| s.to_string_lossy().into())
                 .collect::<VecDeque<_>>();
-            trie.insert(components.clone(), dependencies_parser::parse_dependencies(&contents, crate_name, ModuleComponents(components.into())));
+            trie.insert(components.clone(), 
+                dependencies_parser::parse_dependencies(&contents, crate_name, components.into()));
         }
     } else if path.is_dir() {
         for entry in path.read_dir().expect("read_dir call failed") {

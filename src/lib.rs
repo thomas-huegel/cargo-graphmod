@@ -1,6 +1,6 @@
 pub mod app_builder;
 mod colors;
-mod components;
+mod dependency_components;
 mod dependencies_graph;
 mod dependencies_parser;
 mod dot_formatter;

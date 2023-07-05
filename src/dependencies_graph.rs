@@ -1,3 +1,3 @@
-use crate::{trie::Trie, components::ModuleComponents};
+use crate::{trie::Trie, dependency_components::DependencyComponents};
 
-pub type DependenciesGraph = Trie<String, Vec<ModuleComponents>>;
+pub type DependenciesGraph = Trie<String, Vec<DependencyComponents>>;
