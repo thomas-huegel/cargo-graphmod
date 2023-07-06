@@ -34,27 +34,43 @@ fn show_vertices (trie: &DependenciesGraph, dirname: &str, basename: &str, level
     }
 }
 
-fn make_arrow(trie: &DependenciesGraph, path: &str, v: &DependencyComponents) -> Option<String> {
-    let (longest_prefix, value) = trie.get_longest_prefix(&v.components());
-    if longest_prefix.is_empty() && ! v.is_certainly_internal() {
-        return None;
+fn make_arrow(trie: &DependenciesGraph, path: &str, dependency: &DependencyComponents) -> Option<String> {
+    match dependency.prefix().clone() {
+        None => {
+            let (longest_prefix, value) = trie.get_longest_prefix(&dependency.components());
+            //println!("path {} prefix {:?} value {:?}", path, longest_prefix, dependency.components());
+            let target = if longest_prefix.is_empty() {
+                OUTPUT_SEPARATOR.to_owned() + LIB
+            } else {
+                let appendix = match value {
+                    None => OUTPUT_SEPARATOR.to_owned() + MOD,
+                    Some(_) => "".to_string()
+                };
+                OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix
+            };
+            Some(String::from("\"") + path + "\" -> \"" + &target + "\"")
+        },
+        Some (mut prefix) => {
+            let prefix_len = prefix.len();
+            prefix.append(&mut dependency.components().clone());
+            let (longest_prefix, value) = trie.get_longest_prefix(&prefix);
+            if longest_prefix.len() <= prefix_len {
+                None
+            } else {
+                let appendix = match value {
+                    None => OUTPUT_SEPARATOR.to_owned() + MOD,
+                    Some(_) => "".to_string()
+                };
+                let target = OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix;
+                Some(String::from("\"") + path + "\" -> \"" + &target + "\"")
+            }
+        }
     }
-    let target = if longest_prefix.is_empty() {
-        OUTPUT_SEPARATOR.to_owned() + LIB
-    } else {
-        let appendix = match value {
-            None => OUTPUT_SEPARATOR.to_owned() + MOD,
-            Some(_) => "".to_string()
-        };
-        OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix
-    };
-    Some(String::from("\"") + path + "\" -> \"" + &target + "\"")
-
 }
 
 fn show_dependencies_from_vertex(current_trie: &DependenciesGraph, whole_trie: &DependenciesGraph, path: &str) -> Option<String> {
     current_trie.value.as_ref().map (|deps| deps.iter()
-        .filter_map(|v| make_arrow(whole_trie, path, v))
+        .filter_map(|dependency| make_arrow(whole_trie, path, dependency))
         .collect::<Set<_>>()
         .into_iter()
         .collect::<Vec<_>>()
@@ -99,7 +115,7 @@ mod tests {
                     value: None,
                     children: Map::from([
                         (String::from("bar"), DependenciesGraph {
-                            value: Some(vec![DependencyComponents::new(vec![String::from("abc")], true), DependencyComponents::new(vec![String::from("def")], true)]),
+                            value: Some(vec![DependencyComponents::new(vec![String::from("abc")], None), DependencyComponents::new(vec![String::from("def")], None)]),
                             children: Map::new()
                         }),
                         (String::from("mod"), DependenciesGraph { 
@@ -110,15 +126,15 @@ mod tests {
                 }),
                 (String::from("abc"), DependenciesGraph {
                     value: Some(vec![
-                        DependencyComponents::new(vec![String::from("foo"), String::from("Panel")], true),
-                        DependencyComponents::new(vec![String::from("Widget")], true),
+                        DependencyComponents::new(vec![String::from("foo"), String::from("Panel")], None),
+                        DependencyComponents::new(vec![String::from("Widget")], None),
                     ]),
                     children: Map::new()
                 }),
                 (String::from("def"), DependenciesGraph {
                     value: Some(vec![
-                        DependencyComponents::new(vec![String::from("foo"), String::from("bar"), String::from("Widget")], true),
-                        DependencyComponents::new(vec![String::from("Panel")], false),
+                        DependencyComponents::new(vec![String::from("foo"), String::from("bar"), String::from("Widget")], None),
+                        DependencyComponents::new(vec![String::from("Panel")], Some(vec![String::from("def")])),
                     ]),
                     children: Map::new()
                 }),

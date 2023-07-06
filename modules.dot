@@ -14,7 +14,6 @@ style="filled"
   "::main"[label="main",style="filled",fillcolor="#ffffff"]
   "::trie"[label="trie",style="filled",fillcolor="#ffffff"]
 }
-"::app_builder" -> "::app_builder"
 "::app_builder" -> "::dependencies_graph"
 "::app_builder" -> "::dot_formatter"
 "::app_builder" -> "::files_reader"
@@ -30,9 +29,7 @@ style="filled"
 "::dot_formatter" -> "::dot_formatter"
 "::files_reader" -> "::dependencies_graph"
 "::files_reader" -> "::dependencies_parser"
-"::files_reader" -> "::files_reader"
 "::main" -> "::app_builder"
-"::main" -> "::main"
 "::trie" -> "::trie"
 }
 

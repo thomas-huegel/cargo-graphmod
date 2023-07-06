@@ -1,14 +1,14 @@
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DependencyComponents {
     components: Vec<String>,
-    is_certainly_internal: bool,
+    prefix: Option<Vec<String>>,
 }
 
 impl DependencyComponents {
-    pub fn new(components: Vec<String>, is_certainly_internal: bool) -> Self {
+    pub fn new(components: Vec<String>, prefix: Option<Vec<String>>) -> Self {
         Self {
             components,
-            is_certainly_internal,
+            prefix,
         }
     }
 
@@ -16,7 +16,7 @@ impl DependencyComponents {
         &self.components
     }
 
-    pub fn is_certainly_internal(&self) -> bool {
-        self.is_certainly_internal
+    pub fn prefix<'a>(&'a self) -> &'a Option<Vec<String>> {
+        &self.prefix
     }
 }

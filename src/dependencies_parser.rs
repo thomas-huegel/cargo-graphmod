@@ -48,8 +48,9 @@ fn parse_use(text: &str) -> Vec<String> {
 
 fn expand_dependency_components (dependency_components: &[String], crate_name: &str, mut source_components: Vec<String>) -> DependencyComponents {
     let fst = dependency_components.get(0).expect("A dependency should not be empty!");
+    //println!("{:?} -> {:?}", source_components, dependency_components);
     if fst == crate_name || fst == CRATE { // absolute dependency
-        return DependencyComponents::new(dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>(), true);
+        return DependencyComponents::new(dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>(), None);
     } else { // relative dependency
         if let Some(last) = source_components.last() {
             if last == MOD {
@@ -67,14 +68,13 @@ fn expand_dependency_components (dependency_components: &[String], crate_name: &
                 }
             }
             source_components.append(&mut deps.iter().map(|s| s.into()).collect::<Vec<_>>());
-            return DependencyComponents::new(source_components, true);            
+            return DependencyComponents::new(source_components, None);            
+        } else if fst == SELF {
+            source_components.append(&mut dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>());
+            return DependencyComponents::new(source_components, None);
         } else {
-            let (nb_to_skip, is_certainly_internal) = match fst.as_str() {
-                SELF => (1, true),
-                _ => (0, false)           
-            };
-            source_components.append(&mut dependency_components.iter().skip(nb_to_skip).map(|s| s.into()).collect::<Vec<_>>());
-            return DependencyComponents::new(source_components, is_certainly_internal);
+            //println!("{:?} -> {:?} => {}", source_components, dependency_components, is_certainly_internal);
+            return DependencyComponents::new(dependency_components.iter().map(|s| s.into()).collect::<Vec<_>>(), Some(source_components));
         }
     }
 }
@@ -148,35 +148,35 @@ mod tests {
     fn it_belongs_to_my_crate() {
         let dependency = vec![String::from("my_crate"), String::from("foo"), String::from("bar")];
         let result = expand_dependency_components(&dependency, "my_crate", vec![]);
-        assert_eq!(result, DependencyComponents::new(vec![String::from("foo"), String::from("bar")], true));
+        assert_eq!(result, DependencyComponents::new(vec![String::from("foo"), String::from("bar")], None));
     }
 
     #[test]
     fn it_belongs_to_crate() {
         let dependency = vec![String::from("crate"), String::from("foo"), String::from("bar")];
         let result = expand_dependency_components(&dependency, "my_crate", vec![]);
-        assert_eq!(result, DependencyComponents::new(vec![String::from("foo"), String::from("bar")], true));
+        assert_eq!(result, DependencyComponents::new(vec![String::from("foo"), String::from("bar")], None));
     }
 
     #[test]
     fn it_belongs_to_a_supermodule() {
         let dependency = vec![String::from("super"), String::from("super"), String::from("foo"), String::from("bar")];
         let result = expand_dependency_components(&dependency, "my_crate", vec![String::from("aaa"), String::from("bbb"), String::from("ccc"), String::from("mod")]);
-        assert_eq!(result, DependencyComponents::new(vec![String::from("aaa"), String::from("foo"), String::from("bar")], true));
+        assert_eq!(result, DependencyComponents::new(vec![String::from("aaa"), String::from("foo"), String::from("bar")], None));
     }
 
     #[test]
     fn it_belongs_to_a_submodule_via_self() {
         let dependency = vec![String::from("self"), String::from("foo"), String::from("bar")];
         let result = expand_dependency_components(&dependency, "my_crate", vec![String::from("path"), String::from("mod")]);
-        assert_eq!(result, DependencyComponents::new(vec![String::from("path"), String::from("foo"), String::from("bar")], true));
+        assert_eq!(result, DependencyComponents::new(vec![String::from("path"), String::from("foo"), String::from("bar")], None));
     }
 
     #[test]
     fn it_may_belong_to_some_external_crate() {
         let dependency = vec![String::from("foo"), String::from("bar")];
         let result = expand_dependency_components(&dependency, "my_crate", vec![String::from("path"), String::from("mod")]);
-        assert_eq!(result, DependencyComponents::new(vec![String::from("path"), String::from("foo"), String::from("bar")], false));
+        assert_eq!(result, DependencyComponents::new(vec![String::from("foo"), String::from("bar")], Some(vec![String::from("path")])));
     }
 
     #[test]
@@ -196,14 +196,14 @@ fn main() {
         let mut result = parse_dependencies(text, "my_crate", vec![String::from("path"), String::from("mod")]);
         result.sort();
         assert_eq!(result, vec![
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar")], true),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar1")], true),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar2")], true),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar3"), String::from("abc")], true),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar3"), String::from("xyz")], true),
-            DependencyComponents::new(vec![String::from("foo1")], true),
-            DependencyComponents::new(vec![String::from("path"), String::from("external"), String::from("aaa")], false),
-            DependencyComponents::new(vec![String::from("path"), String::from("foobaz")], true),
+            DependencyComponents::new(vec![String::from("external"), String::from("aaa")], Some(vec![String::from("path")])),
+            DependencyComponents::new(vec![String::from("foo"), String::from("bar")], None),
+            DependencyComponents::new(vec![String::from("foo"), String::from("bar1")], None),
+            DependencyComponents::new(vec![String::from("foo"), String::from("bar2")], None),
+            DependencyComponents::new(vec![String::from("foo"), String::from("bar3"), String::from("abc")], None),
+            DependencyComponents::new(vec![String::from("foo"), String::from("bar3"), String::from("xyz")], None),
+            DependencyComponents::new(vec![String::from("foo1")], None),
+            DependencyComponents::new(vec![String::from("path"), String::from("foobaz")], None),
         ]);
     }
 }
