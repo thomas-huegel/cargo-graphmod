@@ -34,19 +34,22 @@ fn show_vertices (trie: &DependenciesGraph, dirname: &str, basename: &str, level
     }
 }
 
+fn make_target(longest_prefix: &[String], value: &Option<Vec<DependencyComponents>>) -> String {
+    let appendix = match value {
+        None => OUTPUT_SEPARATOR.to_owned() + MOD,
+        Some(_) => "".to_string()
+    };
+    OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix
+}
+
 fn make_arrow(trie: &DependenciesGraph, path: &str, dependency: &DependencyComponents) -> Option<String> {
     match dependency.prefix().clone() {
         None => {
             let (longest_prefix, value) = trie.get_longest_prefix(&dependency.components());
-            //println!("path {} prefix {:?} value {:?}", path, longest_prefix, dependency.components());
             let target = if longest_prefix.is_empty() {
                 OUTPUT_SEPARATOR.to_owned() + LIB
             } else {
-                let appendix = match value {
-                    None => OUTPUT_SEPARATOR.to_owned() + MOD,
-                    Some(_) => "".to_string()
-                };
-                OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix
+                make_target(longest_prefix, &value)
             };
             Some(String::from("\"") + path + "\" -> \"" + &target + "\"")
         },
@@ -57,11 +60,7 @@ fn make_arrow(trie: &DependenciesGraph, path: &str, dependency: &DependencyCompo
             if longest_prefix.len() <= prefix_len {
                 None
             } else {
-                let appendix = match value {
-                    None => OUTPUT_SEPARATOR.to_owned() + MOD,
-                    Some(_) => "".to_string()
-                };
-                let target = OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix;
+                let target = make_target(longest_prefix, &value);
                 Some(String::from("\"") + path + "\" -> \"" + &target + "\"")
             }
         }

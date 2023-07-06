@@ -15,8 +15,7 @@ fn develop_innermost_dependencies (text: &str) -> Set<String> {
     lazy_static! {
         static ref PRODUCT: Regex = Regex::new(r"(?sm)(.*)\{(.*?)\}(.*)").unwrap();
     }
-    let trimmed_text = text.chars().filter(|&c| !c.is_whitespace()).collect::<String>();
-    let rewriting = PRODUCT.captures_iter(&trimmed_text)
+    let rewriting = PRODUCT.captures_iter(&text)
         .flat_map(|cap| {
             cap[2].split(",").map(|x| (cap[1].to_string() + x + &cap[3].to_string()))
             .collect::<Vec<String>>()
@@ -48,7 +47,6 @@ fn parse_use(text: &str) -> Vec<String> {
 
 fn expand_dependency_components (dependency_components: &[String], crate_name: &str, mut source_components: Vec<String>) -> DependencyComponents {
     let fst = dependency_components.get(0).expect("A dependency should not be empty!");
-    //println!("{:?} -> {:?}", source_components, dependency_components);
     if fst == crate_name || fst == CRATE { // absolute dependency
         return DependencyComponents::new(dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>(), None);
     } else { // relative dependency
@@ -73,16 +71,28 @@ fn expand_dependency_components (dependency_components: &[String], crate_name: &
             source_components.append(&mut dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>());
             return DependencyComponents::new(source_components, None);
         } else {
-            //println!("{:?} -> {:?} => {}", source_components, dependency_components, is_certainly_internal);
             return DependencyComponents::new(dependency_components.iter().map(|s| s.into()).collect::<Vec<_>>(), Some(source_components));
         }
     }
 }
 
+fn trim_spaces_and_as (dependency: &str) -> String {
+    let mut vector = dependency.split_whitespace().collect::<Vec<_>>();
+    let mut last_words = dependency.split_whitespace().rev();
+    last_words.next();
+    if let Some ("as") = last_words.next() {
+        vector.pop();
+        vector.pop();
+    }
+    vector.join("")
+}
+
 pub fn parse_dependencies (contents: &str, crate_name: &str, source_components: Vec<String>) -> Vec<DependencyComponents> {
     parse_use(contents).iter()
         .flat_map(|s| develop_all_dependencies(&s))
-        .map(|s| s.split(INPUT_SEPARATOR).map(|s| s.to_string()).collect::<Vec<String>>())
+        .map(|s| s.split(INPUT_SEPARATOR)
+            .map(trim_spaces_and_as)
+            .collect::<Vec<String>>())
         .map(|c| expand_dependency_components(&c, crate_name, source_components.clone()))
         .collect()
 }
@@ -91,14 +101,14 @@ pub fn parse_dependencies (contents: &str, crate_name: &str, source_components: 
 mod tests {
     use std::collections::BTreeSet as Set;
 
-    use crate::{dependencies_parser::{develop_innermost_dependencies, develop_all_dependencies, parse_use, expand_dependency_components, parse_dependencies},
+    use crate::{dependencies_parser::{develop_innermost_dependencies, develop_all_dependencies, parse_use, expand_dependency_components, parse_dependencies, trim_spaces_and_as},
         dependency_components::DependencyComponents};
     
     #[test]
     fn it_develops_innermost() {
         let text = "foo::{bar1, bar2, bar3::{far, boo}}";
         let result = develop_innermost_dependencies(text);
-        assert_eq!(result, Set::from([String::from("foo::{bar1,bar2,bar3::far}"), String::from("foo::{bar1,bar2,bar3::boo}")]));
+        assert_eq!(result, Set::from([String::from("foo::{bar1, bar2, bar3:: boo}"), String::from("foo::{bar1, bar2, bar3::far}")]));
     }
 
 
@@ -106,14 +116,14 @@ mod tests {
     fn it_develops_innermost_2() {
         let text = "crate::{foo::{bar}, baz, abc::def}";
         let result = develop_innermost_dependencies(text);
-        assert_eq!(result, Set::from([String::from("crate::{foo::bar,baz,abc::def}")]));
+        assert_eq!(result, Set::from([String::from("crate::{foo::bar, baz, abc::def}")]));
     }
 
     #[test]
-    fn it_swallows_newlines() {
+    fn it_handles_newlines() {
         let text = "foo::{bar1, bar2, bar3::\n{far, boo}}";
         let result = develop_innermost_dependencies(text);
-        assert_eq!(result, Set::from([String::from("foo::{bar1,bar2,bar3::far}"), String::from("foo::{bar1,bar2,bar3::boo}")]));
+        assert_eq!(result, Set::from([String::from("foo::{bar1, bar2, bar3::\nfar}"), String::from("foo::{bar1, bar2, bar3::\n boo}")]));
     }
 
     #[test]
@@ -124,17 +134,24 @@ mod tests {
     }
 
     #[test]
+    fn it_trims_spaces_and_as() {
+        let text = "foo::bar\n::boo as boo";
+        let result = "foo::bar::boo";
+        assert_eq!(result, trim_spaces_and_as(text));
+    }
+
+    #[test]
     fn it_develops_fully_1() {
         let text = "foo::{bar1, bar2, bar3::{far, boo}}";
         let result = develop_all_dependencies(text);
-        assert_eq!(result, Set::from([String::from("foo::bar1"), String::from("foo::bar2"), String::from("foo::bar3::far"), String::from("foo::bar3::boo")]));
+        assert_eq!(result, Set::from([String::from("foo::bar1"), String::from("foo:: bar2"), String::from("foo:: bar3::far"), String::from("foo:: bar3:: boo")]));
     }
 
     #[test]
     fn it_develops_fully_2() {
         let text = "crate::{foo::{bar}, baz, abc::def}";
         let result = develop_all_dependencies(text);
-        assert_eq!(result, Set::from([String::from("crate::abc::def"), String::from("crate::baz"), String::from("crate::foo::bar")]));
+        assert_eq!(result, Set::from([String::from("crate:: abc::def"), String::from("crate:: baz"), String::from("crate::foo::bar")]));
     }
 
     #[test]
@@ -182,7 +199,7 @@ mod tests {
     #[test]
     fn it_parses_dependencies() {
         let text = r#"
-use crate::foo::bar;
+use crate::foo::bar as bar;
     use my_crate::foo::{bar1,
                       bar2,
                       bar3::{abc, xyz}};
@@ -191,6 +208,7 @@ use self::foobaz;
 use external::aaa;
 
 fn main() {
+    crate::other::dep::fun(); // not handled
 }
         "#;
         let mut result = parse_dependencies(text, "my_crate", vec![String::from("path"), String::from("mod")]);

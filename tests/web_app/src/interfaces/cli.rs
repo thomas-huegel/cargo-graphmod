@@ -1,11 +1,11 @@
-use crate::use_cases::UseCases;
+use crate::use_cases::UseCases as UC;
 
 pub struct CliApp {
-    use_cases: UseCases
+    use_cases: UC,
 }
 
 impl CliApp {
-    pub fn new(use_cases: UseCases) -> Self {
+    pub fn new(use_cases: UC) -> Self {
         Self { use_cases }
     }
 }
