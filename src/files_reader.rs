@@ -1,4 +1,4 @@
-use std::{path::Path, fs::read_to_string, io::Result, collections::VecDeque};
+use std::{path::Path, fs::read_to_string, io::{Result}, collections::VecDeque};
 
 use crate::{dependencies_parser, dependencies_graph::DependenciesGraph};
 
@@ -21,6 +21,8 @@ pub fn read_files<'a>(path: &Path, trie: &mut DependenciesGraph, skip_length: us
                 read_files(&entry.path(), trie, skip_length, pkg_name)?;
             }
         }
+    } else {
+        read_to_string(path)?;
     }
     Ok(())
 }
