@@ -1,3 +1,9 @@
+/**
+ * Copyright 2023 Thomas Hügel.
+ * This file is part of Cargo Graphmod.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 use std::path::Path;
 
 use crate::{dependencies_graph::DependenciesGraph, files_reader, dot_formatter};

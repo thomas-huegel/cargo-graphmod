@@ -1,3 +1,9 @@
+/**
+ * Copyright 2023 Thomas Hügel.
+ * This file is part of Cargo Graphmod.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DependencyComponents {
     components: Vec<String>,
