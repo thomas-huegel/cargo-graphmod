@@ -2,19 +2,14 @@ use std::env;
 
 use cargo_graphmod::app_builder::run_app;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
+const SRC: &str = "src";
 
-    match args.get(1) {
-        Some(directory) => {
-            match args.get(2) {
-                Some(crate_name) => {
-                    let output = run_app(directory, crate_name);
-                    println!("{}", output);
-                }
-                None => println!("Crate name?")
-            }
+fn main() {
+    match env::var("CARGO_PKG_NAME") {
+        Ok(pkg_name) => {
+            let output = run_app(SRC, &pkg_name);
+            println!("{}", output);
         }
-        None => println!("Which directory? Crate name?"),
+        Err(_) => println!("Unable to determine package name from CARGO_PKG_NAME.")
     }
 }

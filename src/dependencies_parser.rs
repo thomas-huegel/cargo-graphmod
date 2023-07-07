@@ -45,9 +45,9 @@ fn parse_use(text: &str) -> Vec<String> {
     USE.captures_iter(text).map(|cap| cap[1].to_string()).collect()
 }
 
-fn expand_dependency_components (dependency_components: &[String], crate_name: &str, mut source_components: Vec<String>) -> DependencyComponents {
+fn expand_dependency_components (dependency_components: &[String], pkg_name: &str, mut source_components: Vec<String>) -> DependencyComponents {
     let fst = dependency_components.get(0).expect("A dependency should not be empty!");
-    if fst == crate_name || fst == CRATE { // absolute dependency
+    if fst == pkg_name || fst == CRATE { // absolute dependency
         return DependencyComponents::new(dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>(), None);
     } else { // relative dependency
         if let Some(last) = source_components.last() {
@@ -87,13 +87,13 @@ fn trim_spaces_and_as (dependency: &str) -> String {
     vector.join("")
 }
 
-pub fn parse_dependencies (contents: &str, crate_name: &str, source_components: Vec<String>) -> Vec<DependencyComponents> {
+pub fn parse_dependencies (contents: &str, pkg_name: &str, source_components: Vec<String>) -> Vec<DependencyComponents> {
     parse_use(contents).iter()
         .flat_map(|s| develop_all_dependencies(&s))
         .map(|s| s.split(INPUT_SEPARATOR)
             .map(trim_spaces_and_as)
             .collect::<Vec<String>>())
-        .map(|c| expand_dependency_components(&c, crate_name, source_components.clone()))
+        .map(|c| expand_dependency_components(&c, pkg_name, source_components.clone()))
         .collect()
 }
 
