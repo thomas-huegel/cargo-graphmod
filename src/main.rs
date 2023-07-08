@@ -12,7 +12,7 @@ const SRC: &str = "src";
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let pkg_name = match args.get(1) {
+    let pkg_name = match args.get(2) {
         Some (name) => name.to_string(),
         None => env::current_dir().expect("Unable to read current directory.")
             .file_name().expect("Unable to read current directory name")
