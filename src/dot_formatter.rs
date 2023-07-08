@@ -147,7 +147,7 @@ mod tests {
         };
         let result = show(&trie);
         let expected = String::from(
-r###"digraph dependencies {
+r##"digraph dependencies {
 subgraph cluster_ {
 label=""
 color="#ffffff"
@@ -169,7 +169,7 @@ style="filled"
 "::foo::bar" -> "::abc"
 "::foo::bar" -> "::def"
 }
-"###
+"##
         );
         assert_eq!(result, expected);
     }
