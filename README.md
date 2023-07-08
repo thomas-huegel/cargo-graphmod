@@ -20,14 +20,14 @@ A `cargo` subcommand for building Graphviz DOT files of dependency graphs betwee
 `cargo-graphmod` can be installed with `cargo install`:
 
 ```ignore
-$ cargo install cargo-graphmod
+cargo install cargo-graphmod
 ```
 
 ## Usage
 
 ```ignore
-$ cd my_rust_package
-$ cargo graph | tred | dot -Tsvg > modules.svg
+cd my_rust_package
+cargo graph | tred | dot -Tsvg > modules.svg
 ```
 
 * Use `tred` if you want the transitive reduction of the graph.
