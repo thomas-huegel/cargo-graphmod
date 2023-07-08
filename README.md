@@ -12,7 +12,7 @@ A `cargo` subcommand for building Graphviz DOT files of dependency graphs betwee
 
 ## Prerequisites
 
-You need to install [Graphviz](https://graphviz.org/).
+* You need to install [Graphviz](https://graphviz.org/).
 
 
 ## Installing
@@ -27,8 +27,12 @@ $ cargo install cargo-graphmod
 
 ```
 $ cd my_rust_package
-$ cargo graph | dot -Tpdf > modules.pdf
+$ cargo graph | tred | dot -Tsvg > modules.svg
 ```
+
+* Use `tred` if you want the transitive reduction of the graph.
+* You can export to [a lot of different formats](https://graphviz.org/docs/outputs/).
+
 
 ## Known limitations
 
@@ -43,4 +47,4 @@ $ cargo graph | dot -Tpdf > modules.pdf
 
 ## Cargo Graphmod's graph
 
-![cargo-graphmod](modules.png)
+![cargo-graphmod](modules.svg)
