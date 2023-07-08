@@ -205,11 +205,11 @@ mod tests {
     #[test]
     fn it_parses_dependencies() {
         let text = r#"
-use crate::foo::bar as bar;
-    use my_crate::foo::{bar1,
+use crate::dependencies_parser::bar as bar;
+    use cargo_graphmod::dependencies_parser::{bar1,
                       bar2,
                       bar3::{abc, xyz}};
-pub use crate::foo1;
+pub use crate::dependencies_parser::foobar;
 use self::foobaz;
 use external::aaa;
 
@@ -217,16 +217,16 @@ fn main() {
     crate::other::dep::fun(); // not handled
 }
         "#;
-        let mut result = parse_dependencies(text, "my_crate", vec![String::from("path"), String::from("mod")]);
+        let mut result = parse_dependencies(text, "cargo_graphmod", vec![String::from("path"), String::from("mod")]);
         result.sort();
         assert_eq!(result, vec![
+            DependencyComponents::new(vec![String::from("dependencies_parser"), String::from("bar")], None),
+            DependencyComponents::new(vec![String::from("dependencies_parser"), String::from("bar1")], None),
+            DependencyComponents::new(vec![String::from("dependencies_parser"), String::from("bar2")], None),
+            DependencyComponents::new(vec![String::from("dependencies_parser"), String::from("bar3"), String::from("abc")], None),
+            DependencyComponents::new(vec![String::from("dependencies_parser"), String::from("bar3"), String::from("xyz")], None),
+            DependencyComponents::new(vec![String::from("dependencies_parser"), String::from("foobar")], None),
             DependencyComponents::new(vec![String::from("external"), String::from("aaa")], Some(vec![String::from("path")])),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar")], None),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar1")], None),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar2")], None),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar3"), String::from("abc")], None),
-            DependencyComponents::new(vec![String::from("foo"), String::from("bar3"), String::from("xyz")], None),
-            DependencyComponents::new(vec![String::from("foo1")], None),
             DependencyComponents::new(vec![String::from("path"), String::from("foobaz")], None),
         ]);
     }
