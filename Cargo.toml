@@ -7,6 +7,7 @@ description = "A cli utility to graph the dependencies between the modules of a 
 license = "GPL-3.0-only"
 repository = "https://github.com/thomas-huegel/cargo-graphmod"
 keywords = ["architecture", "modules", "graph", "dependencies"]
+exclude = ["tests/web_app*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
