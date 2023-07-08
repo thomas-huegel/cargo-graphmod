@@ -48,3 +48,8 @@ cargo graph | tred | dot -Tsvg > modules.svg
 ## Cargo Graphmod's graph
 
 ![cargo-graphmod](modules.svg)
+
+
+## Another example with directories
+
+![web_app](tests/web_app/modules.svg)
