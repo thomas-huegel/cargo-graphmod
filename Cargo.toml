@@ -1,6 +1,6 @@
 [package]
 name = "cargo-graphmod"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["Thomas Hügel"]
 edition = "2021"
 description = "A cli utility to graph the dependencies between the modules of a package in the dot/graphviz format."
