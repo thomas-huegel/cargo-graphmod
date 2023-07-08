@@ -30,6 +30,9 @@ cd my_rust_package
 cargo graphmod | tred | dot -Tsvg > modules.svg
 ```
 
+* Assumptions:
+** You should run the command from the root of your project (just above `src`).
+** By default, the package name (as defined in `Cargo.toml`) is supposed to be the directory name. Otherwise pass it as argument: `cargo graphmod a_different_name`.
 * Use `tred` if you want the transitive reduction of the graph.
 * You can export to [a lot of different formats](https://graphviz.org/docs/outputs/).
 
