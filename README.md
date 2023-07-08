@@ -43,4 +43,4 @@ $ cargo graph | dot -Tpdf > modules.pdf
 
 ## Cargo Graphmod's graph
 
-![cargo-graphmod](modules.pdf)
+![cargo-graphmod](modules.png)
