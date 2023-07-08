@@ -51,7 +51,7 @@ fn make_target(longest_prefix: &[String], value: &Option<Vec<DependencyComponent
 fn make_arrow(trie: &DependenciesGraph, path: &str, dependency: &DependencyComponents) -> Option<String> {
     match dependency.prefix().clone() {
         None => {
-            let (longest_prefix, value) = trie.get_longest_prefix(&dependency.components());
+            let (longest_prefix, value) = trie.get_longest_prefix(dependency.components());
             let target = if longest_prefix.is_empty() {
                 OUTPUT_SEPARATOR.to_owned() + LIB
             } else {
@@ -88,7 +88,7 @@ fn show_arcs (current_trie: &DependenciesGraph, whole_trie: &DependenciesGraph, 
     +
     &current_trie.children.iter()
     .map(|(name, child)| show_arcs(child, whole_trie, &(String::from(path) + OUTPUT_SEPARATOR + name)))
-    .filter(|s| s != "")
+    .filter(|s| !s.is_empty())
     .collect::<Vec<_>>()
     .join("\n")
 }

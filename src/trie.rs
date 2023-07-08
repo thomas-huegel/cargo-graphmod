@@ -46,7 +46,7 @@ impl<K: Eq + Ord + Clone, V: Clone> Trie<K, V> {
         let mut trie = self;
         while let Some(child) = trie.children.get(&k[bound]) {
             trie = child;
-            bound = bound + 1;
+            bound += 1;
             if bound == n {
                 break;
             }

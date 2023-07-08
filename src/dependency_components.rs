@@ -18,11 +18,11 @@ impl DependencyComponents {
         }
     }
 
-    pub fn components<'a>(&'a self) -> &'a Vec<String> {
+    pub fn components(&self) -> & Vec<String> {
         &self.components
     }
 
-    pub fn prefix<'a>(&'a self) -> &'a Option<Vec<String>> {
+    pub fn prefix(&self) -> &Option<Vec<String>> {
         &self.prefix
     }
 }

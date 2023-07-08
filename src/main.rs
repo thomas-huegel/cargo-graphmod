@@ -13,7 +13,7 @@ const SRC: &str = "src";
 fn main() {
     match env::var("CARGO_PKG_NAME") {
         Ok(pkg_name) => {
-            let pkg_rust_name = pkg_name.replace("-", "_");
+            let pkg_rust_name = pkg_name.replace('-', "_");
             let output = run_app(SRC, &pkg_rust_name);
             println!("{}", output);
         }

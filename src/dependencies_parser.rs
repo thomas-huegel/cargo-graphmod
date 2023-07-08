@@ -21,9 +21,9 @@ fn develop_innermost_dependencies (text: &str) -> Set<String> {
     lazy_static! {
         static ref PRODUCT: Regex = Regex::new(r"(?sm)(.*)\{(.*?)\}(.*)").unwrap();
     }
-    let rewriting = PRODUCT.captures_iter(&text)
+    let rewriting = PRODUCT.captures_iter(text)
         .flat_map(|cap| {
-            cap[2].split(",").map(|x| (cap[1].to_string() + x + &cap[3].to_string()))
+            cap[2].split(',').map(|x| (cap[1].to_string() + x + &cap[3]))
             .collect::<Vec<String>>()
         })
         .collect::<Set<String>>();
@@ -72,12 +72,12 @@ fn expand_dependency_components (dependency_components: &[String], pkg_name: &st
                 }
             }
             source_components.append(&mut deps.iter().map(|s| s.into()).collect::<Vec<_>>());
-            return DependencyComponents::new(source_components, None);            
+            DependencyComponents::new(source_components, None)          
         } else if fst == SELF {
             source_components.append(&mut dependency_components.iter().skip(1).map(|s| s.into()).collect::<Vec<_>>());
-            return DependencyComponents::new(source_components, None);
+            DependencyComponents::new(source_components, None)
         } else {
-            return DependencyComponents::new(dependency_components.iter().map(|s| s.into()).collect::<Vec<_>>(), Some(source_components));
+            DependencyComponents::new(dependency_components.iter().map(|s| s.into()).collect::<Vec<_>>(), Some(source_components))
         }
     }
 }
@@ -95,7 +95,7 @@ fn trim_spaces_and_as (dependency: &str) -> String {
 
 pub fn parse_dependencies (contents: &str, pkg_name: &str, source_components: Vec<String>) -> Vec<DependencyComponents> {
     parse_use(contents).iter()
-        .flat_map(|s| develop_all_dependencies(&s))
+        .flat_map(|s| develop_all_dependencies(s))
         .map(|s| s.split(INPUT_SEPARATOR)
             .map(trim_spaces_and_as)
             .collect::<Vec<String>>())
