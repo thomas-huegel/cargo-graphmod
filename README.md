@@ -5,7 +5,7 @@
 -->
 
 
-# cargo-graphmod
+# Cargo Graphmod
 
 A `cargo` subcommand for building Graphviz DOT files of dependency graphs between the modules of a package.
 
@@ -27,7 +27,7 @@ cargo install cargo-graphmod
 
 ```ignore
 cd my_rust_package
-cargo graph | tred | dot -Tsvg > modules.svg
+cargo graphmod | tred | dot -Tsvg > modules.svg
 ```
 
 * Use `tred` if you want the transitive reduction of the graph.
