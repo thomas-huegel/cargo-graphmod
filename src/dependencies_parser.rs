@@ -44,6 +44,14 @@ fn develop_all_dependencies (dependency: &str) -> Set<String> {
     current_deps
 }
 
+fn keep_before_cfg_test(text: &str) -> Option<String> {
+    lazy_static! {
+        static ref KEEP_BEFORE: Regex = Regex::new(r"(?sm)(.*?)\#\[cfg\(test\)\].*").unwrap();
+    }
+    KEEP_BEFORE.captures(text).map(|cap| cap[1].to_string())
+}
+
+
 fn parse_use(text: &str) -> Vec<String> {
     lazy_static! {
         static ref USE: Regex = Regex::new(r"(?sm)^(?:\s)*(?:pub )?use (.*?);").unwrap();
@@ -94,7 +102,11 @@ fn trim_spaces_and_as (dependency: &str) -> String {
 }
 
 pub fn parse_dependencies (contents: &str, pkg_name: &str, source_components: Vec<String>) -> Vec<DependencyComponents> {
-    parse_use(contents).iter()
+    let before_tests = match keep_before_cfg_test(contents) {
+        None => contents.to_string(),
+        Some(found) => found,
+    };
+    parse_use(&before_tests).iter()
         .flat_map(|s| develop_all_dependencies(s))
         .map(|s| s.split(INPUT_SEPARATOR)
             .map(trim_spaces_and_as)
@@ -109,6 +121,8 @@ mod tests {
 
     use crate::{dependencies_parser::{develop_innermost_dependencies, develop_all_dependencies, parse_use, expand_dependency_components, parse_dependencies, trim_spaces_and_as},
         dependency_components::DependencyComponents};
+
+    use super::keep_before_cfg_test;
     
     #[test]
     fn it_develops_innermost() {
@@ -203,7 +217,20 @@ mod tests {
     }
 
     #[test]
-    fn it_parses_dependencies() {
+    fn it_keeps_before_cfg_test() {
+        let text = r#"
+foo
+#[cfg(test)]
+bar
+#[cfg(test)]
+baz
+        "#;
+        let result = keep_before_cfg_test(text);
+        assert_eq!(result, Some(String::from("\nfoo\n")));
+    }
+
+    #[test]
+    fn it_parses_dependencies_outside_tests() {
         let text = r#"
 use crate::dependencies_parser::bar as bar;
     use cargo_graphmod::dependencies_parser::{bar1,
@@ -215,6 +242,11 @@ use external::aaa;
 
 fn main() {
     crate::other::dep::fun(); // not handled
+}
+
+#[cfg(test)]
+mod tests {
+    use inside_tests::other;
 }
         "#;
         let mut result = parse_dependencies(text, "cargo_graphmod", vec![String::from("path"), String::from("mod")]);
