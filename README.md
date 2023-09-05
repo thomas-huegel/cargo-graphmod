@@ -40,6 +40,7 @@ cargo graphmod | tred | dot -Tsvg > modules.svg
 ## Known limitations
 
 * Detects only dependencies introduced by the `use` keyword.
+* Detects only dependencies before the first `#[cfg(test)]` (in order to eliminate the dependencies from unit tests).
 * Works best when there is a bijection between modules and files / directories.
 
 

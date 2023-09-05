@@ -6,7 +6,7 @@
 
 use std::collections::BTreeSet as Set;
 
-use crate::{dependency_components::{DependencyComponents}, colors, dependencies_graph::DependenciesGraph};
+use crate::{dependency_components::DependencyComponents, colors, dependencies_graph::DependenciesGraph};
 
 const LIB: &str = "lib";
 const MOD: &str = "mod";
@@ -84,7 +84,7 @@ fn show_dependencies_from_vertex(current_trie: &DependenciesGraph, whole_trie: &
 }
 
 fn show_arcs (current_trie: &DependenciesGraph, whole_trie: &DependenciesGraph, path: &str) -> String {
-    show_dependencies_from_vertex(current_trie, whole_trie, path).unwrap_or(String::new())
+    show_dependencies_from_vertex(current_trie, whole_trie, path).unwrap_or_default()
     +
     &current_trie.children.iter()
     .map(|(name, child)| show_arcs(child, whole_trie, &(String::from(path) + OUTPUT_SEPARATOR + name)))
