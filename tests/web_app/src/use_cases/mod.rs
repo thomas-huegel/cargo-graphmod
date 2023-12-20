@@ -2,7 +2,7 @@ pub mod storage_trait;
 
 use crate::domain::Domain;
 
-use storage_trait::Storage;
+use self::storage_trait::Storage;
 
 pub struct UseCases {
     domain: Domain,
