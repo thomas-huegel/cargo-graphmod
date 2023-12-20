@@ -16,9 +16,8 @@ fn basename(path: &Path) -> String {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    //println!("{:?}", args);
     let (directory, pkg_name) = match args.get(1) {
-        Some(dir) if dir != GRAPHMOD => (dir.to_string() + "/" + SRC, basename(&Path::new(dir))),
+        Some(dir) if dir != GRAPHMOD => (dir.to_string() + "/" + SRC, basename(Path::new(dir))),
         _ => (
             SRC.to_string(),
             match args.get(2) {
