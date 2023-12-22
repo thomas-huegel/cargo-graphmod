@@ -1,47 +1,47 @@
 digraph dependencies {
-subgraph cluster_ {
-label=""
-color="#ffffff"
-style="filled"
-  "::app_builder"[label="app_builder",style="filled",fillcolor="#ffffff"]
-  subgraph cluster____configuration {
-  label="configuration"
+  subgraph cluster_ {
+  label=""
   color="#eeeeee"
   style="filled"
-    "::configuration::mod"[label="mod",style="filled",fillcolor="#e4d886"]
+    "::app_builder"[label="app_builder",style="filled",fillcolor="#ffffff"]
+    subgraph cluster____configuration {
+    label="configuration"
+    color="#dddddd"
+    style="filled"
+      "::configuration::mod"[label="mod",style="filled",fillcolor="#e4d886"]
+    }
+    subgraph cluster____domain {
+    label="domain"
+    color="#dddddd"
+    style="filled"
+      "::domain::mod"[label="mod",style="filled",fillcolor="#fdb589"]
+    }
+    subgraph cluster____interfaces {
+    label="interfaces"
+    color="#dddddd"
+    style="filled"
+      "::interfaces::cli"[label="cli",style="filled",fillcolor="#cdc5f9"]
+      "::interfaces::mod"[label="mod",style="filled",fillcolor="#cdc5f9"]
+      "::interfaces::web"[label="web",style="filled",fillcolor="#cdc5f9"]
+    }
+    "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
+    "::main"[label="main",style="filled",fillcolor="#ffffff"]
+    subgraph cluster____storage {
+    label="storage"
+    color="#dddddd"
+    style="filled"
+      "::storage::mod"[label="mod",style="filled",fillcolor="#f3c3bb"]
+      "::storage::postgres_db"[label="postgres_db",style="filled",fillcolor="#f3c3bb"]
+      "::storage::sqlite_db"[label="sqlite_db",style="filled",fillcolor="#f3c3bb"]
+    }
+    subgraph cluster____use_cases {
+    label="use_cases"
+    color="#dddddd"
+    style="filled"
+      "::use_cases::mod"[label="mod",style="filled",fillcolor="#8393eb"]
+      "::use_cases::storage_trait"[label="storage_trait",style="filled",fillcolor="#8393eb"]
+    }
   }
-  subgraph cluster____domain {
-  label="domain"
-  color="#eeeeee"
-  style="filled"
-    "::domain::mod"[label="mod",style="filled",fillcolor="#fdb589"]
-  }
-  subgraph cluster____interfaces {
-  label="interfaces"
-  color="#eeeeee"
-  style="filled"
-    "::interfaces::cli"[label="cli",style="filled",fillcolor="#cdc5f9"]
-    "::interfaces::mod"[label="mod",style="filled",fillcolor="#cdc5f9"]
-    "::interfaces::web"[label="web",style="filled",fillcolor="#cdc5f9"]
-  }
-  "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
-  "::main"[label="main",style="filled",fillcolor="#ffffff"]
-  subgraph cluster____storage {
-  label="storage"
-  color="#eeeeee"
-  style="filled"
-    "::storage::mod"[label="mod",style="filled",fillcolor="#f3c3bb"]
-    "::storage::postgres_db"[label="postgres_db",style="filled",fillcolor="#f3c3bb"]
-    "::storage::sqlite_db"[label="sqlite_db",style="filled",fillcolor="#f3c3bb"]
-  }
-  subgraph cluster____use_cases {
-  label="use_cases"
-  color="#eeeeee"
-  style="filled"
-    "::use_cases::mod"[label="mod",style="filled",fillcolor="#8393eb"]
-    "::use_cases::storage_trait"[label="storage_trait",style="filled",fillcolor="#8393eb"]
-  }
-}
 "::app_builder" -> "::configuration::mod"
 "::app_builder" -> "::domain::mod"
 "::app_builder" -> "::interfaces::cli"

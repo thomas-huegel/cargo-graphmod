@@ -6,8 +6,8 @@
 use std::collections::BTreeSet as Set;
 
 use crate::{
-    dependencies_graph::DependenciesGraph,
     dependencies::{DependencyPath, FilePath},
+    dependencies_graph::DependenciesGraph,
     dependencies_processor::DependencyProcessor,
     formatter::{colors, Formatter},
 };
@@ -125,7 +125,7 @@ pub struct DotFormatter {}
 impl Formatter for DotFormatter {
     fn show<Processor: DependencyProcessor>(trie: &DependenciesGraph, pkg_name: &str) -> String {
         String::from("digraph dependencies {\n")
-            + &show_vertices(trie, "", "", 0)
+            + &show_vertices(trie, "", "", 1)
             + &show_arcs::<Processor>(trie, trie, &FilePath(vec![]), pkg_name)
             + "\n}\n"
     }
@@ -136,8 +136,8 @@ mod tests {
     use std::collections::BTreeMap as Map;
 
     use crate::{
-        dependencies_graph::DependenciesGraph,
         dependencies::DependencyPath,
+        dependencies_graph::DependenciesGraph,
         dependencies_processor::rust_processor::target_computer::RustDependencyProcessor,
         formatter::{dot_formatter::DotFormatter, Formatter},
     };
@@ -220,21 +220,21 @@ mod tests {
         let result = DotFormatter::show::<RustDependencyProcessor>(&trie, "my_crate");
         let expected = String::from(
             r##"digraph dependencies {
-subgraph cluster_ {
-label=""
-color="#ffffff"
-style="filled"
-  "::abc"[label="abc",style="filled",fillcolor="#ffffff"]
-  "::def"[label="def",style="filled",fillcolor="#ffffff"]
-  subgraph cluster____foo {
-  label="foo"
+  subgraph cluster_ {
+  label=""
   color="#eeeeee"
   style="filled"
-    "::foo::bar"[label="bar",style="filled",fillcolor="#86c2dc"]
-    "::foo::mod"[label="mod",style="filled",fillcolor="#86c2dc"]
+    "::abc"[label="abc",style="filled",fillcolor="#ffffff"]
+    "::def"[label="def",style="filled",fillcolor="#ffffff"]
+    subgraph cluster____foo {
+    label="foo"
+    color="#dddddd"
+    style="filled"
+      "::foo::bar"[label="bar",style="filled",fillcolor="#86c2dc"]
+      "::foo::mod"[label="mod",style="filled",fillcolor="#86c2dc"]
+    }
+    "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
   }
-  "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
-}
 "::abc" -> "::foo::mod"
 "::abc" -> "::lib"
 "::def" -> "::foo::bar"
