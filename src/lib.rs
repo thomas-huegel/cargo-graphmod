@@ -6,10 +6,10 @@
 
 #[doc = include_str!("../README.md")]
 pub mod app_builder;
-mod colors;
+mod dependencies;
 mod dependencies_graph;
-mod dependencies_parser;
-mod dependency_components;
-mod dot_formatter;
+mod dependencies_processor;
 mod files_reader;
+mod formatter;
+mod parser;
 mod trie;

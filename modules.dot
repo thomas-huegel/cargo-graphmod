@@ -4,35 +4,83 @@ label=""
 color="#ffffff"
 style="filled"
   "::app_builder"[label="app_builder",style="filled",fillcolor="#ffffff"]
-  "::colors"[label="colors",style="filled",fillcolor="#ffffff"]
+  "::dependencies"[label="dependencies",style="filled",fillcolor="#ffffff"]
   "::dependencies_graph"[label="dependencies_graph",style="filled",fillcolor="#ffffff"]
-  "::dependencies_parser"[label="dependencies_parser",style="filled",fillcolor="#ffffff"]
-  "::dependency_components"[label="dependency_components",style="filled",fillcolor="#ffffff"]
-  "::dot_formatter"[label="dot_formatter",style="filled",fillcolor="#ffffff"]
+  subgraph cluster____dependencies_processor {
+  label="dependencies_processor"
+  color="#eeeeee"
+  style="filled"
+    "::dependencies_processor::mod"[label="mod",style="filled",fillcolor="#8393eb"]
+    subgraph cluster____dependencies_processor___rust_processor {
+    label="rust_processor"
+    color="#dddddd"
+    style="filled"
+      "::dependencies_processor::rust_processor::dependency_expander"[label="dependency_expander",style="filled",fillcolor="#eecad4"]
+      "::dependencies_processor::rust_processor::mod"[label="mod",style="filled",fillcolor="#eecad4"]
+      "::dependencies_processor::rust_processor::target_computer"[label="target_computer",style="filled",fillcolor="#eecad4"]
+    }
+  }
   "::files_reader"[label="files_reader",style="filled",fillcolor="#ffffff"]
+  subgraph cluster____formatter {
+  label="formatter"
+  color="#eeeeee"
+  style="filled"
+    "::formatter::colors"[label="colors",style="filled",fillcolor="#dcb0ae"]
+    "::formatter::dot_formatter"[label="dot_formatter",style="filled",fillcolor="#dcb0ae"]
+    "::formatter::mod"[label="mod",style="filled",fillcolor="#dcb0ae"]
+  }
   "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
   "::main"[label="main",style="filled",fillcolor="#ffffff"]
+  "::nonempty_vec"[label="nonempty_vec",style="filled",fillcolor="#ffffff"]
+  subgraph cluster____parser {
+  label="parser"
+  color="#eeeeee"
+  style="filled"
+    "::parser::mod"[label="mod",style="filled",fillcolor="#aaf6a8"]
+    "::parser::rust_parser"[label="rust_parser",style="filled",fillcolor="#aaf6a8"]
+  }
   "::trie"[label="trie",style="filled",fillcolor="#ffffff"]
 }
 "::app_builder" -> "::dependencies_graph"
-"::app_builder" -> "::dot_formatter"
+"::app_builder" -> "::dependencies_processor::rust_processor::target_computer"
 "::app_builder" -> "::files_reader"
-"::app_builder" -> "std"
-"::dependencies_graph" -> "::dependency_components"
+"::app_builder" -> "::formatter::dot_formatter"
+"::app_builder" -> "::formatter::mod"
+"::app_builder" -> "::parser::rust_parser"
+"::app_builder" -> "::std"
+"::dependencies_graph" -> "::dependencies"
 "::dependencies_graph" -> "::trie"
-"::dependencies_parser" -> "::dependency_components"
-"::dependencies_parser" -> "lazy_static"
-"::dependencies_parser" -> "regex"
-"::dependencies_parser" -> "std"
-"::dot_formatter" -> "::colors"
-"::dot_formatter" -> "::dependencies_graph"
-"::dot_formatter" -> "::dependency_components"
-"::dot_formatter" -> "std"
+"::dependencies_processor::mod" -> "::dependencies"
+"::dependencies_processor::mod" -> "::dependencies_graph"
+"::dependencies_processor::rust_processor::dependency_expander" -> "::dependencies"
+"::dependencies_processor::rust_processor::dependency_expander" -> "::dependencies_processor::rust_processor::mod"
+"::dependencies_processor::rust_processor::dependency_expander" -> "::std"
+"::dependencies_processor::rust_processor::mod" -> "::dependencies"
+"::dependencies_processor::rust_processor::target_computer" -> "::dependencies"
+"::dependencies_processor::rust_processor::target_computer" -> "::dependencies_graph"
+"::dependencies_processor::rust_processor::target_computer" -> "::dependencies_processor::mod"
+"::dependencies_processor::rust_processor::target_computer" -> "::dependencies_processor::rust_processor::dependency_expander"
+"::dependencies_processor::rust_processor::target_computer" -> "::dependencies_processor::rust_processor::mod"
+"::dependencies_processor::rust_processor::target_computer" -> "::trie"
 "::files_reader" -> "::dependencies_graph"
-"::files_reader" -> "::dependencies_parser"
-"::files_reader" -> "std"
+"::files_reader" -> "::parser::mod"
+"::files_reader" -> "::std"
+"::formatter::dot_formatter" -> "::dependencies"
+"::formatter::dot_formatter" -> "::dependencies_graph"
+"::formatter::dot_formatter" -> "::dependencies_processor::mod"
+"::formatter::dot_formatter" -> "::formatter::colors"
+"::formatter::dot_formatter" -> "::formatter::mod"
+"::formatter::dot_formatter" -> "::std"
+"::formatter::mod" -> "::dependencies_graph"
+"::formatter::mod" -> "::dependencies_processor::mod"
 "::main" -> "::app_builder"
-"::main" -> "std"
-"::trie" -> "std"
+"::main" -> "::std"
+"::parser::mod" -> "::dependencies"
+"::parser::rust_parser" -> "::dependencies"
+"::parser::rust_parser" -> "::lazy_static"
+"::parser::rust_parser" -> "::parser::mod"
+"::parser::rust_parser" -> "::regex"
+"::parser::rust_parser" -> "::std"
+"::trie" -> "::std"
 }
 

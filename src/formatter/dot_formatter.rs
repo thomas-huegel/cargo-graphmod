@@ -6,11 +6,12 @@
 use std::collections::BTreeSet as Set;
 
 use crate::{
-    colors, dependencies_graph::DependenciesGraph, dependency_components::DependencyComponents,
+    dependencies_graph::DependenciesGraph,
+    dependencies::{DependencyPath, FilePath},
+    dependencies_processor::DependencyProcessor,
+    formatter::{colors, Formatter},
 };
 
-const LIB: &str = "lib";
-const MOD: &str = "mod";
 const OUTPUT_SEPARATOR: &str = "::";
 const CLUSTER_SEPARATOR: &str = "___";
 
@@ -50,45 +51,42 @@ fn show_vertices(trie: &DependenciesGraph, dirname: &str, basename: &str, level:
     }
 }
 
-fn make_target(longest_prefix: &[String], value: &Option<Vec<DependencyComponents>>) -> String {
-    let appendix = match value {
-        None => OUTPUT_SEPARATOR.to_owned() + MOD,
-        Some(_) => "".to_string(),
-    };
-    OUTPUT_SEPARATOR.to_owned() + &longest_prefix.join(OUTPUT_SEPARATOR) + &appendix
+fn make_vertex(path: &FilePath) -> String {
+    OUTPUT_SEPARATOR.to_owned() + &path.0.join(OUTPUT_SEPARATOR)
 }
 
-fn make_arrow(
+fn make_arrow<Processor: DependencyProcessor>(
     trie: &DependenciesGraph,
-    source: &str,
-    dependency: &DependencyComponents,
+    current_path: &FilePath,
+    dependency: &DependencyPath,
+    pkg_name: &str,
 ) -> Option<String> {
-    let target = match dependency.file_path.clone() {
-        None => {
-            // inner dependency
-            let (longest_prefix, value) = trie.get_longest_prefix(&dependency.components);
-            if longest_prefix.is_empty() {
-                Some(OUTPUT_SEPARATOR.to_owned() + LIB)
-            } else {
-                Some(make_target(longest_prefix, &value))
-            }
-        }
-        Some(mut _file_path) => {
-            // external dependency
-            dependency.components.get(0).cloned()
-        }
-    };
-    target.map(|t| String::from("\"") + source + "\" -> \"" + &t + "\"")
+    let target = Processor::compute_target(trie, current_path, dependency, pkg_name);
+    if target.0.is_empty() {
+        None
+    } else {
+        Some(
+            String::from("\"")
+                + &make_vertex(current_path)
+                + "\" -> \""
+                + &make_vertex(&target)
+                + "\"",
+        )
+    }
 }
 
-fn show_dependencies_from_vertex(
+fn show_dependencies_from_vertex<Processor: DependencyProcessor>(
     current_trie: &DependenciesGraph,
     whole_trie: &DependenciesGraph,
-    path: &str,
+    current_path: &FilePath,
+    pkg_name: &str,
 ) -> Option<String> {
-    current_trie.value.as_ref().map(|deps| {
-        deps.iter()
-            .filter_map(|dependency| make_arrow(whole_trie, path, dependency))
+    current_trie.value.as_ref().map(|dependencies| {
+        dependencies
+            .iter()
+            .filter_map(|dependency| {
+                make_arrow::<Processor>(whole_trie, current_path, dependency, pkg_name)
+            })
             .collect::<Set<_>>()
             .into_iter()
             .collect::<Vec<_>>()
@@ -96,32 +94,41 @@ fn show_dependencies_from_vertex(
     })
 }
 
-fn show_arcs(
+fn show_arcs<Processor: DependencyProcessor>(
     current_trie: &DependenciesGraph,
     whole_trie: &DependenciesGraph,
-    path: &str,
+    FilePath(path): &FilePath,
+    pkg_name: &str,
 ) -> String {
-    show_dependencies_from_vertex(current_trie, whole_trie, path).unwrap_or_default()
+    show_dependencies_from_vertex::<Processor>(
+        current_trie,
+        whole_trie,
+        &FilePath(path.clone()),
+        pkg_name,
+    )
+    .unwrap_or_default()
         + &current_trie
             .children
             .iter()
             .map(|(name, child)| {
-                show_arcs(
-                    child,
-                    whole_trie,
-                    &(String::from(path) + OUTPUT_SEPARATOR + name),
-                )
+                let mut new_path = path.clone();
+                new_path.push(name.clone());
+                show_arcs::<Processor>(child, whole_trie, &FilePath(new_path), pkg_name)
             })
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>()
             .join("\n")
 }
 
-pub fn show(trie: &DependenciesGraph) -> String {
-    String::from("digraph dependencies {\n")
-        + &show_vertices(trie, "", "", 0)
-        + &show_arcs(trie, trie, "")
-        + "\n}\n"
+pub struct DotFormatter {}
+
+impl Formatter for DotFormatter {
+    fn show<Processor: DependencyProcessor>(trie: &DependenciesGraph, pkg_name: &str) -> String {
+        String::from("digraph dependencies {\n")
+            + &show_vertices(trie, "", "", 0)
+            + &show_arcs::<Processor>(trie, trie, &FilePath(vec![]), pkg_name)
+            + "\n}\n"
+    }
 }
 
 #[cfg(test)]
@@ -129,13 +136,14 @@ mod tests {
     use std::collections::BTreeMap as Map;
 
     use crate::{
-        dependencies_graph::DependenciesGraph, dependency_components::DependencyComponents,
-        dot_formatter::show,
+        dependencies_graph::DependenciesGraph,
+        dependencies::DependencyPath,
+        dependencies_processor::rust_processor::target_computer::RustDependencyProcessor,
+        formatter::{dot_formatter::DotFormatter, Formatter},
     };
 
-    #[test]
-    fn it_outputs_to_dot() {
-        let trie = DependenciesGraph {
+    fn make_trie() -> DependenciesGraph {
+        DependenciesGraph {
             value: None,
             children: Map::from([
                 (
@@ -154,8 +162,11 @@ mod tests {
                                 String::from("bar"),
                                 DependenciesGraph {
                                     value: Some(vec![
-                                        DependencyComponents::new(vec![String::from("abc")], None),
-                                        DependencyComponents::new(vec![String::from("def")], None),
+                                        DependencyPath(vec![
+                                            String::from("crate"),
+                                            String::from("abc"),
+                                        ]),
+                                        DependencyPath(vec![String::from("std")]),
                                     ]),
                                     children: Map::new(),
                                 },
@@ -163,7 +174,10 @@ mod tests {
                             (
                                 String::from("mod"),
                                 DependenciesGraph {
-                                    value: Some(vec![]),
+                                    value: Some(vec![DependencyPath(vec![
+                                        String::from("bar"),
+                                        String::from("baz"),
+                                    ])]),
                                     children: Map::new(),
                                 },
                             ),
@@ -174,11 +188,12 @@ mod tests {
                     String::from("abc"),
                     DependenciesGraph {
                         value: Some(vec![
-                            DependencyComponents::new(
-                                vec![String::from("foo"), String::from("Panel")],
-                                None,
-                            ),
-                            DependencyComponents::new(vec![String::from("Widget")], None),
+                            DependencyPath(vec![
+                                String::from("crate"),
+                                String::from("foo"),
+                                String::from("Panel"),
+                            ]),
+                            DependencyPath(vec![String::from("crate"), String::from("Widget")]),
                         ]),
                         children: Map::new(),
                     },
@@ -186,26 +201,23 @@ mod tests {
                 (
                     String::from("def"),
                     DependenciesGraph {
-                        value: Some(vec![
-                            DependencyComponents::new(
-                                vec![
-                                    String::from("foo"),
-                                    String::from("bar"),
-                                    String::from("Widget"),
-                                ],
-                                None,
-                            ),
-                            DependencyComponents::new(
-                                vec![String::from("Panel")],
-                                Some(vec![String::from("def")]),
-                            ),
-                        ]),
+                        value: Some(vec![DependencyPath(vec![
+                            String::from("crate"),
+                            String::from("foo"),
+                            String::from("bar"),
+                            String::from("Widget"),
+                        ])]),
                         children: Map::new(),
                     },
                 ),
             ]),
-        };
-        let result = show(&trie);
+        }
+    }
+
+    #[test]
+    fn it_outputs_to_dot() {
+        let trie = make_trie();
+        let result = DotFormatter::show::<RustDependencyProcessor>(&trie, "my_crate");
         let expected = String::from(
             r##"digraph dependencies {
 subgraph cluster_ {
@@ -226,9 +238,9 @@ style="filled"
 "::abc" -> "::foo::mod"
 "::abc" -> "::lib"
 "::def" -> "::foo::bar"
-"::def" -> "Panel"
 "::foo::bar" -> "::abc"
-"::foo::bar" -> "::def"
+"::foo::bar" -> "::std"
+"::foo::mod" -> "::foo::bar"
 }
 "##,
         );

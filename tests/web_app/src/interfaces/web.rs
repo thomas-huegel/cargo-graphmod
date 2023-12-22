@@ -1,4 +1,4 @@
-use crate::use_cases::{UseCases};
+use crate::use_cases::UseCases;
 
 pub struct WebApp {
     use_cases: UseCases,

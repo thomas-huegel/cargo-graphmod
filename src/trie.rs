@@ -11,6 +11,13 @@ pub struct Trie<K: Eq + Ord, V> {
     pub children: Map<K, Trie<K, V>>,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum NodeKind {
+    Leaf,
+    Internal,
+    None,
+}
+
 impl<K: Eq + Ord + Clone, V: Clone> Trie<K, V> {
     pub fn new() -> Self {
         Self {
@@ -37,7 +44,7 @@ impl<K: Eq + Ord + Clone, V: Clone> Trie<K, V> {
         }
     }
 
-    pub fn get_longest_prefix<'a>(&self, k: &'a [K]) -> (&'a [K], Option<V>) {
+    pub fn get_longest_prefix<'b>(&self, k: &'b [K]) -> (&'b [K], NodeKind) {
         let n = k.len();
         let mut bound = 0;
         let mut trie = self;
@@ -48,7 +55,14 @@ impl<K: Eq + Ord + Clone, V: Clone> Trie<K, V> {
                 break;
             }
         }
-        (&k[0..bound], trie.value.clone())
+        let kind = if bound == 0 {
+            NodeKind::None
+        } else if trie.children.is_empty() {
+            NodeKind::Leaf
+        } else {
+            NodeKind::Internal
+        };
+        (&k[0..bound], kind)
     }
 }
 
@@ -56,7 +70,7 @@ impl<K: Eq + Ord + Clone, V: Clone> Trie<K, V> {
 mod tests {
     use std::collections::{BTreeMap as Map, VecDeque};
 
-    use crate::trie::Trie;
+    use crate::trie::{NodeKind, Trie};
 
     #[test]
     fn it_builds_a_one_branch_trie() {
@@ -131,8 +145,11 @@ mod tests {
         let a1 = [1, 3, 4];
         let a2 = [1, 4];
         let a3 = [4];
-        assert_eq!(trie.get_longest_prefix(&a1), (&a1[0..2], Some(30)));
-        assert_eq!(trie.get_longest_prefix(&a2), (&a2[0..1], None));
-        assert_eq!(trie.get_longest_prefix(&a3), (&a3[0..0], None));
+        assert_eq!(trie.get_longest_prefix(&a1), (&a1[0..2], NodeKind::Leaf));
+        assert_eq!(
+            trie.get_longest_prefix(&a2),
+            (&a2[0..1], NodeKind::Internal)
+        );
+        assert_eq!(trie.get_longest_prefix(&a3), (&a3[0..0], NodeKind::None));
     }
 }

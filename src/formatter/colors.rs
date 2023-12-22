@@ -22,7 +22,7 @@ pub fn make_random_color(dirname: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::colors::{make_gray, make_random_color};
+    use crate::formatter::colors::{make_gray, make_random_color};
 
     #[test]
     fn it_makes_gray() {
