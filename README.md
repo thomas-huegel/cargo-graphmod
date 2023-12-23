@@ -54,6 +54,6 @@ cargo graphmod | tred | dot -Tsvg > modules.svg
 ![cargo-graphmod](modules.svg)
 
 
-## Another example with directories
+## Other example
 
 ![web_app](tests/web_app/modules.svg)
