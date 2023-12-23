@@ -224,16 +224,16 @@ mod tests {
   label=""
   color="#eeeeee"
   style="filled"
-    "::abc"[label="abc",style="filled",fillcolor="#ffffff"]
-    "::def"[label="def",style="filled",fillcolor="#ffffff"]
+    "::abc"[label="abc",style="filled",fillcolor="#e3f38b"]
+    "::def"[label="def",style="filled",fillcolor="#e3f38b"]
     subgraph cluster____foo {
     label="foo"
     color="#dddddd"
     style="filled"
-      "::foo::bar"[label="bar",style="filled",fillcolor="#86c2dc"]
-      "::foo::mod"[label="mod",style="filled",fillcolor="#86c2dc"]
+      "::foo::bar"[label="bar",style="filled",fillcolor="#eab6e8"]
+      "::foo::mod"[label="mod",style="filled",fillcolor="#eab6e8"]
     }
-    "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
+    "::lib"[label="lib",style="filled",fillcolor="#e3f38b"]
   }
 "::abc" -> "::foo::mod"
 "::abc" -> "::lib"

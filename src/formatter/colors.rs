@@ -11,7 +11,7 @@ pub fn make_gray(level: usize) -> String {
 }
 
 pub fn make_random_color(dirname: &str) -> String {
-    let n: u32 = dirname.chars().filter_map(|c| c.to_digit(36)).sum();
+    let n = dirname.chars().filter_map(|c| c.to_digit(36)).sum::<u32>() + 4;
     let red = (255 - n * 71 % 128) as u8;
     let green = (255 - n * 131 % 128) as u8;
     let blue = (255 - n * 29 % 128) as u8;
@@ -31,6 +31,6 @@ mod tests {
 
     #[test]
     fn it_makes_a_random_color() {
-        assert_eq!(String::from("#b6b2ec"), make_random_color("::foo::bar"))
+        assert_eq!(String::from("#9aa6f8"), make_random_color("::foo::bar"))
     }
 }

@@ -3,43 +3,42 @@ digraph dependencies {
   label=""
   color="#eeeeee"
   style="filled"
-    "::app_builder"[label="app_builder",style="filled",fillcolor="#ffffff"]
-    "::dependencies"[label="dependencies",style="filled",fillcolor="#ffffff"]
-    "::dependencies_graph"[label="dependencies_graph",style="filled",fillcolor="#ffffff"]
+    "::app_builder"[label="app_builder",style="filled",fillcolor="#e3f38b"]
+    "::dependencies"[label="dependencies",style="filled",fillcolor="#e3f38b"]
+    "::dependencies_graph"[label="dependencies_graph",style="filled",fillcolor="#e3f38b"]
     subgraph cluster____dependencies_processor {
     label="dependencies_processor"
     color="#dddddd"
     style="filled"
-      "::dependencies_processor::mod"[label="mod",style="filled",fillcolor="#8393eb"]
+      "::dependencies_processor::mod"[label="mod",style="filled",fillcolor="#e787f7"]
       subgraph cluster____dependencies_processor___rust_processor {
       label="rust_processor"
       color="#cccccc"
       style="filled"
-        "::dependencies_processor::rust_processor::dependency_expander"[label="dependency_expander",style="filled",fillcolor="#eecad4"]
-        "::dependencies_processor::rust_processor::mod"[label="mod",style="filled",fillcolor="#eecad4"]
-        "::dependencies_processor::rust_processor::target_computer"[label="target_computer",style="filled",fillcolor="#eecad4"]
+        "::dependencies_processor::rust_processor::dependency_expander"[label="dependency_expander",style="filled",fillcolor="#d2bee0"]
+        "::dependencies_processor::rust_processor::mod"[label="mod",style="filled",fillcolor="#d2bee0"]
+        "::dependencies_processor::rust_processor::target_computer"[label="target_computer",style="filled",fillcolor="#d2bee0"]
       }
     }
-    "::files_reader"[label="files_reader",style="filled",fillcolor="#ffffff"]
+    "::files_reader"[label="files_reader",style="filled",fillcolor="#e3f38b"]
     subgraph cluster____formatter {
     label="formatter"
     color="#dddddd"
     style="filled"
-      "::formatter::colors"[label="colors",style="filled",fillcolor="#dcb0ae"]
-      "::formatter::dot_formatter"[label="dot_formatter",style="filled",fillcolor="#dcb0ae"]
-      "::formatter::mod"[label="mod",style="filled",fillcolor="#dcb0ae"]
+      "::formatter::colors"[label="colors",style="filled",fillcolor="#c0a4ba"]
+      "::formatter::dot_formatter"[label="dot_formatter",style="filled",fillcolor="#c0a4ba"]
+      "::formatter::mod"[label="mod",style="filled",fillcolor="#c0a4ba"]
     }
-    "::lib"[label="lib",style="filled",fillcolor="#ffffff"]
-    "::main"[label="main",style="filled",fillcolor="#ffffff"]
-    "::nonempty_vec"[label="nonempty_vec",style="filled",fillcolor="#ffffff"]
+    "::lib"[label="lib",style="filled",fillcolor="#e3f38b"]
+    "::main"[label="main",style="filled",fillcolor="#e3f38b"]
     subgraph cluster____parser {
     label="parser"
     color="#dddddd"
     style="filled"
-      "::parser::mod"[label="mod",style="filled",fillcolor="#aaf6a8"]
-      "::parser::rust_parser"[label="rust_parser",style="filled",fillcolor="#aaf6a8"]
+      "::parser::mod"[label="mod",style="filled",fillcolor="#8eeab4"]
+      "::parser::rust_parser"[label="rust_parser",style="filled",fillcolor="#8eeab4"]
     }
-    "::trie"[label="trie",style="filled",fillcolor="#ffffff"]
+    "::trie"[label="trie",style="filled",fillcolor="#e3f38b"]
   }
 "::app_builder" -> "::dependencies_graph"
 "::app_builder" -> "::dependencies_processor::rust_processor::target_computer"

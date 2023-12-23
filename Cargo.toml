@@ -1,6 +1,6 @@
 [package]
 name = "cargo-graphmod"
-version = "1.0.6"
+version = "1.1.0"
 authors = ["Thomas Hügel"]
 edition = "2021"
 description = "A cli utility to graph the dependencies between the modules of a package in the dot/graphviz format."
@@ -12,5 +12,5 @@ exclude = [".github/", "tests/web_app*"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lazy_static = "1.4"
+lazy_static = "1"
 regex = "1"

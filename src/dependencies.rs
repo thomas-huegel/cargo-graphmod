@@ -9,8 +9,3 @@ pub struct FilePath(pub Vec<String>);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DependencyPath(pub Vec<String>);
-
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Dependencies {
-    pub dependencies: Vec<DependencyPath>,
-}
